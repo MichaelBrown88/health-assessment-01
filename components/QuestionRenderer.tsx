@@ -17,11 +17,15 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({ question, an
   switch (question.type) {
     case 'radio':
       return (
-        <RadioGroup onValueChange={onAnswer} value={answer as string}>
+        <RadioGroup onValueChange={onAnswer} value={answer as string || ''}>
           {question.options?.map((option) => (
-            <div key={option.value} className="flex items-center space-x-2">
-              <RadioGroupItem value={option.value} id={option.value} />
-              <Label htmlFor={option.value}>{option.label}</Label>
+            <div key={option.value} className="flex items-center space-x-2 mb-2">
+              <RadioGroupItem 
+                value={option.value} 
+                id={option.value} 
+                className="radio-custom"
+              />
+              <Label htmlFor={option.value} className="text-[var(--text-color)]">{option.label}</Label>
             </div>
           ))}
         </RadioGroup>
@@ -29,8 +33,9 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({ question, an
     case 'checkbox':
       return (
         <div>
+          <p className="mb-2 text-[var(--text-color)]">Choose all that apply:</p>
           {question.options?.map((option) => (
-            <div key={option.value} className="flex items-center space-x-2">
+            <div key={option.value} className="flex items-center space-x-2 mb-2">
               <Checkbox
                 id={option.value}
                 checked={Array.isArray(answer) ? answer.includes(option.value) : false}
@@ -41,8 +46,9 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({ question, an
                     : currentAnswer.filter((v) => v !== option.value)
                   onAnswer(newAnswer)
                 }}
+                className="checkbox-custom"
               />
-              <Label htmlFor={option.value}>{option.label}</Label>
+              <Label htmlFor={option.value} className="text-[var(--text-color)]">{option.label}</Label>
             </div>
           ))}
         </div>
@@ -56,8 +62,9 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({ question, an
             step={question.step}
             value={[answer as number || question.defaultValue || 0]}
             onValueChange={(value) => onAnswer(value[0])}
+            className="slider-custom"
           />
-          <div className="text-center font-semibold">
+          <div className="text-center font-semibold text-[var(--text-color)]">
             {answer || question.defaultValue}
             {question.id === "age" ? " years" : 
              question.id === "weight" ? " kg" : 

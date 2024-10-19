@@ -1,4 +1,4 @@
-import { Question } from '../types/Question'
+import { Question, AnswerType } from '../types/Question'
 
 export const questions: Question[] = [
   { 
@@ -68,7 +68,7 @@ export const questions: Question[] = [
       { value: "vigorous", label: "Vigorous (heavy sweating, rapid heart rate)" },
       { value: "very-intense", label: "Very intense (profuse sweating, very rapid heart rate)" },
     ],
-    condition: (answers: any) => answers.activityLevel !== "sedentary",
+    condition: (answers: AnswerType) => answers.activityLevel !== "sedentary",
   },
   {
     id: "exerciseDuration",
@@ -80,7 +80,7 @@ export const questions: Question[] = [
       { value: "45-60", label: "45-60 minutes" },
       { value: "60+", label: "More than 60 minutes" },
     ],
-    condition: (answers: any) => answers.activityLevel !== "sedentary",
+    condition: (answers: AnswerType) => answers.activityLevel !== "sedentary",
   },
   {
     id: "exerciseType",
@@ -93,7 +93,7 @@ export const questions: Question[] = [
       { value: "flexibility", label: "Flexibility (yoga, pilates)" },
       { value: "mixed", label: "Mixed (combination of different types)" },
     ],
-    condition: (answers: any) => answers.activityLevel !== "sedentary",
+    condition: (answers: AnswerType) => answers.activityLevel !== "sedentary",
   },
   {
     id: "goals",

@@ -14,7 +14,6 @@ import { useQuestionNavigation } from '../hooks/useQuestionNavigation'
 import { useHealthCalculations } from '../hooks/useHealthCalculations'
 import { questions } from '../data/questions'
 import { answerReducer } from '../reducers/answerReducer'
-import { AnswerType } from '../types/Question'
 
 export function HealthAssessment() {
   const { setTheme } = useTheme()
@@ -43,7 +42,7 @@ export function HealthAssessment() {
     } else {
       dispatch({ type: 'SET_ANSWER', payload: { id: question.id, value } })
     }
-  }, [currentQuestion, questions])
+  }, [currentQuestion])
 
   const handleNextQuestion = useCallback(() => {
     const isFinished = handleNext()
@@ -74,18 +73,18 @@ export function HealthAssessment() {
   }, [])
 
   return (
-    <div className="relative min-h-screen flex flex-col items-center justify-center text-center px-4 py-16 overflow-hidden bg-[#050508] text-white font-['Montserrat',sans-serif]">
+    <div className="relative min-h-screen flex flex-col items-center justify-center text-center px-4 py-16 overflow-hidden">
       <SpaceTheme />
       <div className="relative z-20 w-full max-w-4xl mx-auto">
         {currentQuestion === -1 ? (
           <WelcomeScreen onStart={() => handleNext()} onLogin={handleLogin} />
         ) : (
-          <Card className="bg-gray-900 bg-opacity-50 backdrop-blur-sm border-0 shadow-xl">
-            <CardHeader className="flex flex-col items-center">
-              <CardTitle className="text-3xl font-bold text-center text-white">Comprehensive Health Assessment</CardTitle>
-              <CardDescription className="text-center text-gray-300">Discover insights about your health and receive personalized recommendations</CardDescription>
-            </CardHeader>
-            <CardContent className="text-white">
+          <div className="card-custom">
+            <div className="flex flex-col items-center mb-6">
+              <h2 className="text-3xl font-bold text-center text-[var(--text-color)]">Comprehensive Health Assessment</h2>
+              <p className="text-center text-[var(--text-color)] opacity-80">Discover insights about your health and receive personalized recommendations</p>
+            </div>
+            <div>
               {!showResults ? (
                 <div>
                   <div className="mb-6">
@@ -93,11 +92,11 @@ export function HealthAssessment() {
                       value={(currentQuestion + 1) / questions.length * 100} 
                       className="h-2 bg-gray-700" 
                     />
-                    <div className="text-xs mt-1 text-right text-gray-400">
+                    <div className="text-xs mt-1 text-right text-[var(--text-color)] opacity-80">
                       Question {currentQuestion + 1} of {questions.length}
                     </div>
                   </div>
-                  <h3 className="text-xl font-semibold mb-4 text-left">{questions[currentQuestion].question}</h3>
+                  <h3 className="text-xl font-semibold mb-4 text-left text-[var(--text-color)]">{questions[currentQuestion].question}</h3>
                   <QuestionRenderer 
                     question={questions[currentQuestion]} 
                     answer={answers[questions[currentQuestion].id] as string | number | string[]} 
@@ -109,11 +108,14 @@ export function HealthAssessment() {
               ) : (
                 <AnalysisResult answers={answers} healthCalculations={healthCalculations} onRetake={handleRetake} />
               )}
-            </CardContent>
-            <CardFooter className="flex justify-between items-center space-x-4">
+            </div>
+            <div className="flex justify-between items-center space-x-4 mt-6">
               <div className="w-1/2">
                 {currentQuestion > 0 && !showResults && (
-                  <Button onClick={handlePrevious} variant="outline" className="w-full px-4 py-2 text-sm">
+                  <Button 
+                    onClick={handlePrevious} 
+                    className="btn-custom w-full"
+                  >
                     Previous
                   </Button>
                 )}
@@ -123,14 +125,14 @@ export function HealthAssessment() {
                   <Button 
                     onClick={handleNextQuestion} 
                     disabled={!answers[questions[currentQuestion].id] && questions[currentQuestion].id !== 'bodyFat'}
-                    className="w-full px-4 py-2 text-sm bg-primary text-primary-foreground hover:bg-primary/90"
+                    className="btn-custom w-full"
                   >
                     {currentQuestion === questions.length - 1 ? "Get Your Analysis" : "Next"}
                   </Button>
                 )}
               </div>
-            </CardFooter>
-          </Card>
+            </div>
+          </div>
         )}
       </div>
     </div>

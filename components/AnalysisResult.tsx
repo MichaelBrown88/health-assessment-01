@@ -18,7 +18,6 @@ interface AnalysisResultProps {
 export const AnalysisResult: React.FC<AnalysisResultProps> = ({ answers, healthCalculations, onRetake }) => {
   const { bmi, bmiCategory, bmr, tdee, recommendedCalories, proteinGrams, carbGrams, fatGrams, bodyFat, isBodyFatEstimated, idealWeightLow, idealWeightHigh } = healthCalculations
   const score = calculateScore(answers, bmi)
-  const overallColor = getTrafficLightColor(score)
 
   const renderFeedbackItem = (label: string, value: string, feedback: { feedback: string, color: string }) => (
     <li className="mb-4">
@@ -39,14 +38,14 @@ export const AnalysisResult: React.FC<AnalysisResultProps> = ({ answers, healthC
   )
 
   const renderSection = (title: string, items: { label: string, value: string, feedback: ReturnType<typeof getFeedback> }[], score: number) => (
-    <section className="mb-8 bg-white bg-opacity-5 rounded-lg p-6">
+    <section className="card-custom mb-8">
       <h3 className="text-xl font-semibold mb-4 text-left border-b border-gray-700 pb-2">{title}</h3>
       <div className="mb-4">
         <Progress value={score} className="h-2" />
         <p className="text-sm mt-1 text-right">{score}%</p>
       </div>
       <ul className="list-none pl-0 space-y-2 text-left">
-        {items.map((item, index) => renderFeedbackItem(item.label, item.value, item.feedback))}
+        {items.map((item) => renderFeedbackItem(item.label, item.value, item.feedback))}
       </ul>
     </section>
   )
@@ -85,7 +84,7 @@ export const AnalysisResult: React.FC<AnalysisResultProps> = ({ answers, healthC
 
   return (
     <div className="space-y-8 text-left">
-      <section>
+      <section className="card-custom">
         <h2 className="text-2xl font-bold mb-4">Your Health Analysis</h2>
         <div className="bg-white bg-opacity-10 p-6 rounded-lg">
           <h3 className="text-xl font-semibold mb-2">Overall Health Score</h3>
@@ -183,7 +182,7 @@ export const AnalysisResult: React.FC<AnalysisResultProps> = ({ answers, healthC
         </Card>
       </div>
 
-      <section className="bg-white bg-opacity-5 rounded-lg p-6">
+      <section className="card-custom">
         <h3 className="text-xl font-semibold mb-4">Health Goals</h3>
         {Array.isArray(answers.goals) && answers.goals.length > 0 ? (
           <Tabs defaultValue={answers.goals[0]}>
@@ -221,8 +220,8 @@ export const AnalysisResult: React.FC<AnalysisResultProps> = ({ answers, healthC
         </div>
       ))}
 
-      <section className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-lg p-6 shadow-lg">
-        <h3 className="text-2xl font-semibold mb-6 border-b border-gray-700 pb-2">Summary</h3>
+      <section className="card-custom">
+        <h3 className="text-xl font-semibold mb-4">Summary</h3>
         <div className="space-y-6">
           {summary.map((section, index) => (
             <div key={index} className={`rounded-lg p-4 ${getTrafficLightColor(section.score) === 'red' ? 'bg-red-900 bg-opacity-20' : getTrafficLightColor(section.score) === 'amber' ? 'bg-yellow-900 bg-opacity-20' : 'bg-green-900 bg-opacity-20'}`}>
@@ -250,7 +249,7 @@ export const AnalysisResult: React.FC<AnalysisResultProps> = ({ answers, healthC
         </div>
       </section>
 
-      <section className="bg-white bg-opacity-5 rounded-lg p-6">
+      <section className="card-custom">
         <h3 className="text-xl font-semibold mb-4">Next Steps</h3>
         <p className="mb-4">To improve your overall health score:</p>
         <ol className="list-decimal list-inside space-y-2 mb-6">

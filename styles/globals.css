@@ -20,7 +20,6 @@ body {
 @layer components {
   .card-custom {
     @apply bg-[var(--card-background)] backdrop-blur-sm border-0 shadow-xl rounded-lg p-6;
-    color: var(--text-color);
   }
 
   .btn-custom {
@@ -34,7 +33,7 @@ body {
   }
 
   .radio-custom, .checkbox-custom {
-    @apply text-[var(--text-color)] bg-transparent border-2 border-[var(--text-color)];
+    @apply text-[var(--button-background)] bg-transparent border-2 border-gray-300;
   }
 
   .slider-custom {
@@ -42,7 +41,7 @@ body {
   }
 
   .slider-thumb-custom {
-    @apply bg-[var(--text-color)] border-2 border-[var(--text-color)];
+    @apply bg-[var(--button-background)] border-2 border-[var(--button-text)];
   }
 }
 
@@ -71,23 +70,4 @@ body {
 @keyframes stars {
   0% { background-position: 0 0, 40px 60px, 130px 270px, 70px 100px; }
   100% { background-position: -550px 0, -310px 60px, -120px 270px, -80px 100px; }
-}
-
-/* Additional styles for light text and elements */
-.card-custom h1, .card-custom h2, .card-custom h3, .card-custom p, .card-custom label {
-  color: var(--text-color);
-}
-
-.radio-custom:checked, .checkbox-custom:checked {
-  background-color: var(--text-color);
-}
-
-.slider-custom::-webkit-slider-thumb {
-  background-color: var(--text-color);
-  border-color: var(--text-color);
-}
-
-.slider-custom::-moz-range-thumb {
-  background-color: var(--text-color);
-  border-color: var(--text-color);
 }
