@@ -1,10 +1,27 @@
-import { Question, AnswerType } from '../types/Question'
+export type QuestionOption = {
+  value: string;
+  label: string;
+};
+
+export type Question = {
+  id: string;
+  question: string;
+  type: 'text' | 'number' | 'choice' | 'slider' | 'radio' | 'checkbox';
+  options?: QuestionOption[];
+  min?: number;
+  max?: number;
+  step?: number;
+  defaultValue?: number;
+  condition?: (answers: AnswerType) => boolean;
+};
+
+export type AnswerType = Record<string, string | number | string[]>;
 
 export const questions: Question[] = [
   { 
     id: "age", 
     question: "What is your age?", 
-    type: "slider" as const,
+    type: "slider",
     min: 18,
     max: 100,
     step: 1,
@@ -13,7 +30,7 @@ export const questions: Question[] = [
   {
     id: "gender",
     question: "What is your gender?",
-    type: "radio" as const,
+    type: "radio",
     options: [
       { value: "male", label: "Male" },
       { value: "female", label: "Female" },
@@ -22,7 +39,7 @@ export const questions: Question[] = [
   { 
     id: "weight", 
     question: "What is your weight in kg?", 
-    type: "slider" as const,
+    type: "slider",
     min: 40,
     max: 200,
     step: 1,
@@ -31,7 +48,7 @@ export const questions: Question[] = [
   { 
     id: "height", 
     question: "What is your height in cm?", 
-    type: "slider" as const,
+    type: "slider",
     min: 140,
     max: 220,
     step: 1,
@@ -40,7 +57,7 @@ export const questions: Question[] = [
   { 
     id: "bodyFat", 
     question: "What is your estimated body fat percentage? (Optional)", 
-    type: "slider" as const,
+    type: "slider",
     min: 5,
     max: 50,
     step: 0.1,
@@ -49,7 +66,7 @@ export const questions: Question[] = [
   {
     id: "activityLevel",
     question: "What is your activity level?",
-    type: "radio" as const,
+    type: "radio",
     options: [
       { value: "sedentary", label: "Sedentary (little to no exercise)" },
       { value: "light", label: "Lightly active (light exercise 1-2 days/week)" },
@@ -61,7 +78,7 @@ export const questions: Question[] = [
   {
     id: "exerciseIntensity",
     question: "How intense are your typical workouts?",
-    type: "radio" as const,
+    type: "radio",
     options: [
       { value: "light", label: "Light (minimal sweating, normal heart rate)" },
       { value: "moderate", label: "Moderate (light sweating, elevated heart rate)" },
@@ -73,7 +90,7 @@ export const questions: Question[] = [
   {
     id: "exerciseDuration",
     question: "On average, how long is each of your exercise sessions?",
-    type: "radio" as const,
+    type: "radio",
     options: [
       { value: "less-than-30", label: "Less than 30 minutes" },
       { value: "30-45", label: "30-45 minutes" },
@@ -85,7 +102,7 @@ export const questions: Question[] = [
   {
     id: "exerciseType",
     question: "What type(s) of exercise do you primarily do?",
-    type: "checkbox" as const,
+    type: "checkbox",
     options: [
       { value: "cardio", label: "Cardio (running, cycling, swimming)" },
       { value: "strength", label: "Strength training" },
@@ -98,7 +115,7 @@ export const questions: Question[] = [
   {
     id: "goals",
     question: "What are your primary health goals?",
-    type: "checkbox" as const,
+    type: "checkbox",
     options: [
       { value: "weight-loss", label: "Weight loss" },
       { value: "muscle-gain", label: "Muscle gain" },
@@ -109,7 +126,7 @@ export const questions: Question[] = [
   {
     id: "diet",
     question: "How would you describe your overall diet and eating habits?",
-    type: "radio" as const,
+    type: "radio",
     options: [
       { value: "unhealthy", label: "Mostly unhealthy (processed foods, high in sugar and fat, few fruits and vegetables)" },
       { value: "average", label: "Average (mix of healthy and unhealthy foods, some fruits and vegetables)" },
@@ -120,7 +137,7 @@ export const questions: Question[] = [
   {
     id: "carbPreference",
     question: "What is your preference for carbohydrate intake in your diet?",
-    type: "radio" as const,
+    type: "radio",
     options: [
       { value: "low-carb", label: "Low-carb: I prefer to eat fewer carbohydrates" },
       { value: "moderate-carb", label: "Moderate-carb: I like to have a balanced mix of carbohydrates, protein, and fats" },
@@ -130,7 +147,7 @@ export const questions: Question[] = [
   {
     id: "lastMeal",
     question: "When do you typically eat your last meal of the day?",
-    type: "radio" as const,
+    type: "radio",
     options: [
       { value: "before-6pm", label: "Before 6 PM" },
       { value: "6pm-8pm", label: "Between 6 PM and 8 PM" },
@@ -141,7 +158,7 @@ export const questions: Question[] = [
   {
     id: "mealFrequency",
     question: "How many meals do you typically eat per day?",
-    type: "radio" as const,
+    type: "radio",
     options: [
       { value: "1-2", label: "1-2 meals" },
       { value: "3-4", label: "3-4 meals" },
@@ -151,7 +168,7 @@ export const questions: Question[] = [
   {
     id: "sleepDuration",
     question: "How many hours of sleep do you get on average?",
-    type: "radio" as const,
+    type: "radio",
     options: [
       { value: "less-than-6", label: "Less than 6 hours" },
       { value: "6-7", label: "6-7 hours" },
@@ -162,7 +179,7 @@ export const questions: Question[] = [
   {
     id: "sleepQuality",
     question: "How would you describe your sleep quality?",
-    type: "radio" as const,
+    type: "radio",
     options: [
       { value: "poor", label: "Poor (wake up regularly throughout the night)" },
       { value: "fair", label: "Fair (some disruptions, but generally okay)" },
@@ -173,7 +190,7 @@ export const questions: Question[] = [
   {
     id: "recovery",
     question: "How well do you feel your body recovers after physical activity?",
-    type: "radio" as const,
+    type: "radio",
     options: [
       { value: "poor", label: "Poor (often feel sore and fatigued for days)" },
       { value: "fair", label: "Fair (some lingering soreness, but manageable)" },
@@ -184,7 +201,7 @@ export const questions: Question[] = [
   {
     id: "stress",
     question: "How would you rate your stress levels?",
-    type: "radio" as const,
+    type: "radio",
     options: [
       { value: "very-high", label: "Very high" },
       { value: "high", label: "High" },
@@ -195,7 +212,7 @@ export const questions: Question[] = [
   {
     id: "mentalHealth",
     question: "How often do you feel down or anxious?",
-    type: "radio" as const,
+    type: "radio",
     options: [
       { value: "often", label: "Often (most days)" },
       { value: "sometimes", label: "Sometimes (a few times a week)" },
@@ -206,7 +223,7 @@ export const questions: Question[] = [
   {
     id: "socializing",
     question: "How often do you engage in social activities or spend time with friends/family?",
-    type: "radio" as const,
+    type: "radio",
     options: [
       { value: "rarely", label: "Rarely (less than once a month)" },
       { value: "occasionally", label: "Occasionally (1-2 times a month)" },

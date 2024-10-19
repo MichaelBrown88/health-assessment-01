@@ -1,2 +1,4 @@
-export { HealthAssessment } from './HealthAssessment'
+import HealthAssessment from './HealthAssessment'
+
+export default HealthAssessment
 

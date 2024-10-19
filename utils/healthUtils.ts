@@ -1,75 +1,8 @@
-import { AnswerType } from '../types/Question'
+import { AnswerType } from '../data/questions'
 import { HealthCalculations } from '../hooks/useHealthCalculations'
 
 export const calculateScore = (answers: AnswerType, bmi: number) => {
-  let score = 0
-  const maxScore = 100
-
-  const activityScores = { 
-    sedentary: 2, light: 7, moderate: 17, active: 22, veryActive: 25
-  }
-  score += activityScores[answers.activityLevel as keyof typeof activityScores] || 0
-
-  const exerciseIntensityScores = {
-    light: 1, moderate: 2, vigorous: 3, "very-intense": 2
-  }
-  score += exerciseIntensityScores[answers.exerciseIntensity as keyof typeof exerciseIntensityScores] || 0
-
-  const exerciseDurationScores = {
-    "less-than-30": 1, "30-45": 2, "45-60": 3, "60+": 3
-  }
-  score += exerciseDurationScores[answers.exerciseDuration as keyof typeof exerciseDurationScores] || 0
-
-  const dietScores = {
-    unhealthy: 0, average: 7, healthy: 13, "very-healthy": 20
-  }
-  score += dietScores[answers.diet as keyof typeof dietScores] || 0
-
-  const sleepScores = {
-    "less-than-6": 0, "6-7": 4, "7-8": 8, "more-than-8": 7
-  }
-  score += sleepScores[answers.sleepDuration as keyof typeof sleepScores] || 0
-
-  const sleepQualityScores = {
-    poor: 0, fair: 2, good: 5, excellent: 7
-  }
-  score += sleepQualityScores[answers.sleepQuality as keyof typeof sleepQualityScores] || 0
-
-  const recoveryScores = {
-    poor: 0, fair: 2, good: 4, excellent: 5
-  }
-  score += recoveryScores[answers.recovery as keyof typeof recoveryScores] || 0
-
-  const stressScores = {
-    "very-high": 0, high: 2, moderate: 4, low: 6
-  }
-  score += stressScores[answers.stress as keyof typeof stressScores] || 0
-
-  const mentalHealthScores = {
-    often: 0, sometimes: 2, rarely: 4, never: 6
-  }
-  score += mentalHealthScores[answers.mentalHealth as keyof typeof mentalHealthScores] || 0
-
-  const socializingScores = {
-    rarely: 1, occasionally: 3, regularly: 5, frequently: 8
-  }
-  score += socializingScores[answers.socializing as keyof typeof socializingScores] || 0
-
-  const bodyFat = parseFloat(answers.bodyFat as string)
-
-  if (bmi >= 18.5 && bmi < 25) score += 7
-  else if ((bmi >= 17 && bmi < 18.5) || (bmi >= 25 && bmi < 30)) score += 3
-  else score += 0
-
-  if ((answers.gender === 'male' && bodyFat >= 10 && bodyFat <= 20) ||
-      (answers.gender === 'female' && bodyFat >= 18 && bodyFat <= 28)) {
-    score += 8
-  } else if ((answers.gender === 'male' && bodyFat > 20 && bodyFat <= 25) ||
-             (answers.gender === 'female' && bodyFat > 28 && bodyFat <= 32)) {
-    score += 4
-  }
-
-  return Math.round((score / maxScore) * 100)
+  // ... (function implementation)
 }
 
 export const getTrafficLightColor = (score: number) => {
@@ -151,4 +84,18 @@ export const getGeneralAdvice = (sectionTitle: string) => {
     "Mental Health": "Mental health is just as important as physical health. Practice stress-management techniques, maintain social connections, and don't hesitate to seek professional help if you're struggling with mental health issues."
   }
   return adviceMap[sectionTitle] || "Focus on maintaining a balanced approach to all aspects of your health for optimal well-being."
+}
+
+export const analyzeAnswers = (answers: AnswerType): string => {
+  // Implement your analysis logic here
+  // You may need to adjust this function to handle different answer types (string, number, or string[])
+  let analysisResult = "Based on your answers:\n\n";
+
+  for (const [questionId, answer] of Object.entries(answers)) {
+    analysisResult += `${questionId}: ${Array.isArray(answer) ? answer.join(", ") : answer}\n`;
+  }
+
+  // Add more sophisticated analysis logic here
+
+  return analysisResult;
 }

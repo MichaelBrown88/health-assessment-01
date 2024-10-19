@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { AnswerType } from '../types/Question'
+import { AnswerType } from '../data/questions'
 
 export interface HealthCalculations {
   bmi: number

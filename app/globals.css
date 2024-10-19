@@ -1,93 +1,261 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --background-color: #050508;
+  --background-color: #121212;
   --text-color: #f7f7f7;
-  --card-background: rgba(18, 18, 18, 0.05);
+  --card-background: rgba(247, 247, 247, 0.05);
   --button-background: #f7f7f7;
   --button-text: #121212;
   --button-hover: #e0e0e0;
+  --space-blue: #0a192f;
+  --slider-background: rgba(247, 247, 247, 0.2);
 }
 
 body {
   font-family: 'Montserrat', sans-serif;
   background-color: var(--background-color);
   color: var(--text-color);
+  font-size: 16px;
+  line-height: 1.5;
 }
 
-@layer components {
-  .card-custom {
-    @apply bg-[var(--card-background)] backdrop-blur-sm border-0 shadow-xl rounded-lg p-6;
-    color: var(--text-color);
-  }
+/* Global styles */
+.container {
+  @apply max-w-3xl mx-auto px-4 py-8;
+}
 
-  .btn-custom {
-    @apply bg-[var(--button-background)] text-[var(--button-text)] hover:bg-[var(--button-hover)] 
-           transition-colors duration-200 px-4 py-2 text-sm font-medium rounded-md shadow-lg;
-  }
+h1 {
+  @apply text-4xl md:text-6xl font-bold mb-4 text-[#f7f7f7] leading-tight;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+  animation: fade-in-up 0.5s ease-out;
+}
 
-  .input-custom {
-    @apply bg-transparent border border-gray-600 text-white placeholder-gray-400
-           focus:border-white focus:ring-white;
-  }
+h2 {
+  @apply text-2xl md:text-3xl font-semibold mb-3 text-[#f7f7f7];
+}
 
-  .radio-custom, .checkbox-custom {
-    @apply text-[var(--text-color)] bg-transparent border-2 border-[var(--text-color)];
-  }
+h3 {
+  @apply text-xl md:text-2xl font-medium mb-2 text-[#f7f7f7];
+}
 
-  .slider-custom {
-    @apply bg-gray-700;
-  }
+p {
+  @apply text-sm md:text-base mb-6 text-[#f7f7f7] max-w-2xl mx-auto opacity-90;
+}
 
-  .slider-thumb-custom {
-    @apply bg-[var(--text-color)] border-2 border-[var(--text-color)];
-  }
+/* Welcome Screen specific styles */
+.welcome-button {
+  @apply px-6 py-3 text-base shadow-lg hover:scale-105 transition-all duration-300;
+}
+
+.welcome-button.primary {
+  @apply bg-[#f7f7f7] text-[#121212] hover:bg-[#e0e0e0];
+}
+
+.welcome-button.secondary {
+  @apply bg-transparent text-[#f7f7f7] hover:bg-[rgba(247,247,247,0.1)];
+}
+
+button {
+  @apply px-4 py-2 text-sm bg-[#f7f7f7] text-[#121212] hover:bg-[#e0e0e0] shadow-md hover:scale-105 transition-all duration-300 rounded-md;
+}
+
+button.secondary {
+  @apply bg-transparent text-[#f7f7f7] hover:bg-[rgba(247,247,247,0.1)];
+}
+
+input[type="text"], input[type="number"], input[type="email"], select {
+  @apply bg-[rgba(247,247,247,0.05)] text-[#f7f7f7] border-none rounded-md
+         focus:ring-2 focus:ring-[var(--space-blue)] focus:bg-[rgba(247,247,247,0.1)]
+         text-sm py-2 px-3 w-full;
+}
+
+.question-container {
+  @apply mb-6;
+}
+
+.result-container {
+  @apply bg-[rgba(255,255,255,0.05)] rounded-lg p-4 backdrop-blur-sm;
 }
 
 /* Space theme styles */
 .space-background {
-  background: radial-gradient(ellipse at center, #0a0a0f 0%, #050508 100%);
-}
-
-.space-grid {
-  background-image: 
-    linear-gradient(to right, rgba(255,255,255,0.1) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255,255,255,0.1) 1px, transparent 1px);
-  background-size: 20px 20px;
+  @apply fixed inset-0 z-0;
+  background: radial-gradient(ellipse at center, #1a1a1a 0%, #121212 100%);
 }
 
 .space-stars {
-  background-image: radial-gradient(white, rgba(255,255,255,.2) 2px, transparent 40px),
-                    radial-gradient(white, rgba(255,255,255,.15) 1px, transparent 30px),
-                    radial-gradient(white, rgba(255,255,255,.1) 2px, transparent 40px),
-                    radial-gradient(rgba(255,255,255,.4), rgba(255,255,255,.1) 2px, transparent 30px);
-  background-size: 550px 550px, 350px 350px, 250px 250px, 150px 150px;
-  background-position: 0 0, 40px 60px, 130px 270px, 70px 100px;
-  animation: stars 120s linear infinite;
+  @apply fixed inset-0 z-10;
 }
 
-@keyframes stars {
-  0% { background-position: 0 0, 40px 60px, 130px 270px, 70px 100px; }
-  100% { background-position: -550px 0, -310px 60px, -120px 270px, -80px 100px; }
+.space-grid {
+  @apply fixed inset-0 z-20;
+  mask-image: radial-gradient(circle at center, transparent 0%, transparent 60%, rgba(255,255,255,0.5) 80%, transparent 100%);
 }
 
-/* Additional styles for light text and elements */
-.card-custom h1, .card-custom h2, .card-custom h3, .card-custom p, .card-custom label {
-  color: var(--text-color);
+.space-grid line {
+  stroke: var(--space-blue);
+  stroke-width: 0.5;
 }
 
-.radio-custom:checked, .checkbox-custom:checked {
-  background-color: var(--text-color);
+/* Animations */
+@keyframes fade-in-up {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-.slider-custom::-webkit-slider-thumb {
-  background-color: var(--text-color);
-  border-color: var(--text-color);
+.animate-fade-in-up {
+  animation: fade-in-up 0.5s ease-out;
 }
 
-.slider-custom::-moz-range-thumb {
-  background-color: var(--text-color);
-  border-color: var(--text-color);
+/* Custom components */
+@layer components {
+  .card-custom {
+    @apply bg-[var(--card-background)] backdrop-blur-sm shadow-lg rounded-lg p-6;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
+  }
+
+  .btn-custom {
+    @apply bg-[#f7f7f7] text-[#121212] hover:bg-[#e0e0e0] 
+           transition-colors duration-200 px-4 py-2 text-sm font-medium rounded-md shadow-md;
+  }
+
+  .input-custom {
+    @apply bg-transparent text-[#f7f7f7] placeholder-[#f7f7f7] opacity-70
+           focus:ring-2 focus:ring-[var(--space-blue)] focus:bg-[rgba(247,247,247,0.1)]
+           rounded-md text-sm py-2 px-3;
+  }
+
+  .checkbox-custom {
+    @apply text-[var(--space-blue)] bg-transparent focus:ring-[var(--space-blue)];
+  }
+
+  .progress-custom {
+    @apply bg-[var(--space-blue)] h-2 rounded-full;
+  }
+}
+
+/* Additional utility classes */
+.text-shadow {
+  text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.backdrop-blur {
+  backdrop-filter: blur(5px);
+}
+
+/* Navigation buttons */
+.nav-button {
+  @apply px-6 py-3 text-sm bg-[rgba(247,247,247,0.1)] text-[#f7f7f7] hover:bg-[rgba(247,247,247,0.2)] 
+         shadow-md transition-all duration-300 rounded-full backdrop-blur-sm;
+}
+
+.nav-button-container {
+  @apply flex justify-between items-center mt-8;
+}
+
+/* Radio buttons */
+.radio-group {
+  @apply space-y-2;
+}
+
+.radio-option {
+  @apply flex items-center space-x-3 p-2 rounded-md transition-all duration-200
+         bg-[rgba(247,247,247,0.05)] hover:bg-[rgba(247,247,247,0.1)];
+}
+
+.radio-input {
+  @apply sr-only;
+}
+
+.radio-label {
+  @apply flex items-center cursor-pointer text-sm;
+}
+
+.radio-check {
+  @apply w-4 h-4 border border-[#f7f7f7] rounded-full flex items-center justify-center mr-2;
+}
+
+.radio-input:checked + .radio-label .radio-check::after {
+  content: '';
+  @apply w-2 h-2 bg-[#f7f7f7] rounded-full;
+}
+
+/* Progress bar */
+.progress-bar {
+  @apply bg-[rgba(247,247,247,0.1)] h-2 rounded-full overflow-hidden;
+}
+
+.progress-bar-fill {
+  @apply h-full bg-[var(--space-blue)] transition-all duration-300 ease-in-out;
+}
+
+/* Slider */
+.slider-container {
+  @apply relative w-full h-12 my-8;
+}
+
+.slider-input {
+  @apply absolute top-0 left-0 w-full h-full opacity-0 cursor-pointer z-20;
+}
+
+.slider-track {
+  @apply absolute top-1/2 left-0 h-2 bg-[#f7f7f7] rounded-full transition-all duration-200 transform -translate-y-1/2;
+}
+
+.slider-thumb {
+  @apply absolute top-1/2 w-6 h-6 bg-[#f7f7f7] rounded-full shadow-md transform -translate-x-1/2 -translate-y-1/2
+         transition-all duration-200 z-10;
+}
+
+.slider-value {
+  @apply text-center font-semibold mt-4;
+}
+
+/* Radio and Checkbox styles */
+.option-group {
+  @apply space-y-2;
+}
+
+.option-item {
+  @apply flex items-center space-x-3 p-2 rounded-md transition-all duration-200;
+}
+
+.option-input {
+  @apply sr-only;
+}
+
+.option-label {
+  @apply flex items-center cursor-pointer text-sm w-full;
+}
+
+.option-check {
+  @apply w-5 h-5 border-2 border-[#f7f7f7] flex items-center justify-center mr-2 transition-all duration-200;
+}
+
+.option-input:checked + .option-label .option-check {
+  @apply bg-[#f7f7f7] border-[#f7f7f7];
+}
+
+/* Radio specific styles */
+.radio .option-check {
+  @apply rounded-full;
+}
+
+/* Checkbox specific styles */
+.checkbox .option-check {
+  @apply rounded-sm;
+}
+
+.multiple-select-text {
+  @apply text-xs text-[#f7f7f7] font-semibold mt-1;
 }
