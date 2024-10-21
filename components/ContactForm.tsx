@@ -20,30 +20,35 @@ export const ContactForm: React.FC<ContactFormProps> = ({ onSubmit, error }) => 
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <Label htmlFor="name">Name</Label>
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="space-y-2">
+        <Label htmlFor="name" className="block text-left text-sm font-medium text-[#f7f7f7]">
+          Name
+        </Label>
         <Input
           id="name"
+          type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="Your name"
           required
+          className="w-full"
         />
       </div>
-      <div>
-        <Label htmlFor="email">Email</Label>
+      <div className="space-y-2">
+        <Label htmlFor="email" className="block text-left text-sm font-medium text-[#f7f7f7]">
+          Email
+        </Label>
         <Input
           id="email"
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder="Your email"
           required
+          className="w-full"
         />
       </div>
-      {error && <p className="text-red-500">{error}</p>}
-      <Button type="submit">Submit</Button>
+      {error && <p className="text-red-500 text-sm">{error}</p>}
+      <Button type="submit" className="w-full">Submit</Button>
     </form>
   )
 }

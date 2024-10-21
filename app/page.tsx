@@ -1,5 +1,5 @@
-import HealthAssessment from "@/components/HealthAssessment"
+import { redirect } from 'next/navigation'
 
-export default function Page() {
-  return <HealthAssessment />
+export default function Home() {
+  redirect('/welcome')
 }

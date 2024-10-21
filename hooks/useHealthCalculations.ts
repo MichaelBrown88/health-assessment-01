@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import { AnswerType } from '../data/questions'
 
 export interface HealthCalculations {
@@ -17,7 +17,22 @@ export interface HealthCalculations {
 }
 
 export const useHealthCalculations = (answers: AnswerType): HealthCalculations => {
-  return useMemo(() => {
+  const [healthCalculations, setHealthCalculations] = useState<HealthCalculations>({
+    bmi: 0,
+    bmiCategory: '',
+    bmr: 0,
+    tdee: 0,
+    recommendedCalories: 0,
+    proteinGrams: 0,
+    carbGrams: 0,
+    fatGrams: 0,
+    bodyFat: null,
+    isBodyFatEstimated: false,
+    idealWeightLow: 0,
+    idealWeightHigh: 0
+  })
+
+  useEffect(() => {
     const weight = parseFloat(answers.weight as string)
     const height = parseFloat(answers.height as string) / 100 // convert cm to m
     const age = parseInt(answers.age as string)
@@ -73,7 +88,7 @@ export const useHealthCalculations = (answers: AnswerType): HealthCalculations =
     const idealWeightLow = 18.5 * (height * height)
     const idealWeightHigh = 24.9 * (height * height)
 
-    return {
+    setHealthCalculations({
       bmi,
       bmiCategory,
       bmr,
@@ -86,6 +101,8 @@ export const useHealthCalculations = (answers: AnswerType): HealthCalculations =
       isBodyFatEstimated: bodyFat === null,
       idealWeightLow: Math.round(idealWeightLow),
       idealWeightHigh: Math.round(idealWeightHigh)
-    }
+    })
   }, [answers])
+
+  return healthCalculations
 }

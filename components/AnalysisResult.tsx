@@ -21,7 +21,10 @@ export const AnalysisResult: React.FC<AnalysisResultProps> = ({ answers, healthC
   const { bmi, bmiCategory, bmr, tdee, recommendedCalories, proteinGrams, carbGrams, fatGrams, bodyFat, isBodyFatEstimated, idealWeightLow, idealWeightHigh } = healthCalculations
 
   // Calculate the score once and store it
-  const score = calculateScore(answers, bmi)
+  const score: number = React.useMemo(() => {
+    const calculatedScore = calculateScore(answers, bmi);
+    return typeof calculatedScore === 'number' ? calculatedScore : 0;
+  }, [answers, bmi]);
 
   const renderFeedbackItem = (label: string, value: string, feedback: { feedback: string, color: string }) => (
     <li className="mb-4">
@@ -84,18 +87,7 @@ export const AnalysisResult: React.FC<AnalysisResultProps> = ({ answers, healthC
     const goals = answers.goals as string[]
     return (bmiCategory === "Underweight" && goals.includes("weight-loss")) ||
            (bmiCategory === "Obese" && goals.includes("muscle-gain"))
-  }
-
-  window.addEventListener('scroll', function() {
-    const scrollPosition = window.scrollY;
-    const fadeOverlay = document.querySelector('.fade-overlay');
-    
-    if (scrollPosition > 0) {
-      fadeOverlay.style.opacity = Math.min(scrollPosition / 200, 1);
-    } else {
-      fadeOverlay.style.opacity = 0;
-    }
-  });
+  };
 
   return (
     <div className="analysis-result-container">

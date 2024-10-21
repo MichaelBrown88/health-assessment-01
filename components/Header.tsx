@@ -1,17 +1,10 @@
+import React from 'react';
 import Image from 'next/image';
 
-const Header = () => {
+const Header: React.FC = () => {
   return (
-    <header className="absolute top-8 left-0 w-full z-50 flex justify-center">
-      <div className="max-w-7xl w-full flex justify-center">
-        <Image
-          src="/Primary_Logo_White.png"
-          alt="Logo"
-          width={144}  // Increased by 20% from 120
-          height={48}  // Increased by 20% from 40
-          priority
-        />
-      </div>
+    <header className="absolute top-0 left-0 right-0 flex justify-center items-center p-20 z-20">
+      <Image src="/Primary_Logo_White.png" alt="Logo" width={150} height={50} priority />
     </header>
   );
 };

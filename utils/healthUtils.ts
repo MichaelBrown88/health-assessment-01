@@ -1,8 +1,13 @@
 import { AnswerType } from '../data/questions'
 import { HealthCalculations } from '../hooks/useHealthCalculations'
 
-export const calculateScore = (answers: AnswerType, bmi: number) => {
-  // ... (function implementation)
+export const calculateScore = (answers: AnswerType, bmi: number): number => {
+  // Your score calculation logic here
+  // Make sure this function always returns a number
+  // For example:
+  let score = 0;
+  // ... (your scoring logic)
+  return score;
 }
 
 export const getTrafficLightColor = (score: number) => {

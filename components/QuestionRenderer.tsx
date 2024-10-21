@@ -5,7 +5,7 @@ import { Slider } from "@/components/ui/slider"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
-import { Question, QuestionOption } from '../data/questions'
+import { Question } from '../data/questions'
 
 interface QuestionRendererProps {
   question: Question;
@@ -18,10 +18,9 @@ const QuestionRenderer: React.FC<QuestionRendererProps> = ({ question, onAnswer,
     case "radio":
       return (
         <div className="question-container">
-          <h2>{question.question}</h2>
-          <RadioGroup onValueChange={onAnswer} value={answers[question.id] as string}>
+          <RadioGroup onValueChange={onAnswer} value={answers[question.id] as string || ''}>
             {question.options?.map((option) => (
-              <div key={option.value} className="flex items-center space-x-2">
+              <div key={option.value} className="flex items-center space-x-2 mb-2">
                 <RadioGroupItem value={option.value} id={option.value} />
                 <Label htmlFor={option.value}>{option.label}</Label>
               </div>
@@ -32,9 +31,9 @@ const QuestionRenderer: React.FC<QuestionRendererProps> = ({ question, onAnswer,
     case "checkbox":
       return (
         <div className="question-container">
-          <h2>{question.question}</h2>
+          <p className="text-sm text-[#f7f7f7] opacity-70 mb-2">Select all that apply</p>
           {question.options?.map((option) => (
-            <div key={option.value} className="flex items-center space-x-2">
+            <div key={option.value} className="flex items-center space-x-2 mb-2">
               <Checkbox
                 id={option.value}
                 checked={(answers[question.id] as string[] || []).includes(option.value)}
@@ -55,15 +54,23 @@ const QuestionRenderer: React.FC<QuestionRendererProps> = ({ question, onAnswer,
     case "slider":
       return (
         <div className="question-container">
-          <h2>{question.question}</h2>
-          <Slider
-            min={question.min}
-            max={question.max}
-            step={question.step}
-            value={[answers[question.id] as number || question.defaultValue || 0]}
-            onValueChange={(value) => onAnswer(value[0])}
-          />
-          <p>{answers[question.id] || question.defaultValue}</p>
+          <p className="text-xl font-semibold mb-2">
+            {answers[question.id] || question.defaultValue}
+            {question.id === "age" ? " years" : 
+             question.id === "weight" ? " kg" : 
+             question.id === "height" ? " cm" :
+             question.id === "bodyFat" ? "%" : ""}
+          </p>
+          <div className="w-full px-4 slider-container">
+            <Slider
+              min={question.min}
+              max={question.max}
+              step={question.step}
+              value={[answers[question.id] as number || question.defaultValue || 0]}
+              onValueChange={(value) => onAnswer(value[0])}
+              className="w-full"
+            />
+          </div>
         </div>
       )
     default:

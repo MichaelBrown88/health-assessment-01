@@ -1,5 +1,4 @@
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -15,19 +14,31 @@ html, body {
   flex-direction: column;
 }
 
+/* Scroll Fade Effect */
 .fade-scroll {
   mask-image: linear-gradient(to bottom, transparent, black 10%, black 90%, transparent);
 }
 
+/* Default Theme Variables */
 :root {
   --background-color: #121212;
   --text-color: #f7f7f7;
   --card-background: rgba(247, 247, 247, 0.05);
   --button-background: #f7f7f7;
-  --button-text: #121212;
-  --button-hover: #e0e0e0;
   --space-blue: #0a192f;
-  --slider-background: rgba(247, 247, 247, 0.2);
+  --slider-background: rgb(247, 247, 247);
+}
+
+/* Light Theme Variables */
+[data-theme='light'] {
+  --background-color: #f4f4f4;
+  --text-color: #121212;
+}
+
+/* Minimalist Theme Variables */
+[data-theme='minimalist'] {
+  --background-color: #ffffff;
+  --text-color: #333333;
 }
 
 body {
@@ -38,14 +49,15 @@ body {
   line-height: 1.5;
 }
 
-/* Global styles */
+/* Global container */
 .container {
   @apply max-w-3xl mx-auto px-4 py-8;
 }
 
+/* Headings */
 h1 {
-  @apply text-4xl md:text-6xl font-bold mb-4 text-[#f7f7f7] leading-tight;
-  text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+  @apply text-4xl md:text-6xl font-bold mb-4 leading-tight text-[#f7f7f7];
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
   animation: fade-in-up 0.5s ease-out;
 }
 
@@ -61,7 +73,7 @@ p {
   @apply text-sm md:text-base mb-6 text-[#f7f7f7] max-w-2xl mx-auto opacity-90;
 }
 
-/* Welcome Screen specific styles */
+/* Welcome Button Styles */
 .welcome-button {
   @apply px-6 py-3 text-base shadow-lg hover:scale-105 transition-all duration-300;
 }
@@ -74,229 +86,101 @@ p {
   @apply bg-transparent text-[#f7f7f7] hover:bg-[rgba(247,247,247,0.1)];
 }
 
-button {
-  @apply px-4 py-2 text-sm bg-[#f7f7f7] text-[#121212] hover:bg-[#e0e0e0] shadow-md hover:scale-105 transition-all duration-300 rounded-md;
-}
-
-button.secondary {
-  @apply bg-transparent text-[#f7f7f7] hover:bg-[rgba(247,247,247,0.1)];
-}
-
+/* Input Fields */
 input[type="text"], input[type="number"], input[type="email"], select {
-  @apply bg-[rgba(247,247,247,0.05)] text-[#f7f7f7] border-none rounded-md
-         focus:ring-2 focus:ring-[var(--space-blue)] focus:bg-[rgba(247,247,247,0.1)]
-         text-sm py-2 px-3 w-full;
-}
-
-.question-container {
-  @apply mb-6;
-}
-
-.result-container {
-  @apply bg-[rgba(255,255,255,0.05)] rounded-lg p-4 backdrop-blur-sm;
+  @apply bg-[rgba(247,247,247,0.05)] text-[#f7f7f7] border-none rounded-md focus:ring-2 focus:ring-[var(--space-blue)] focus:bg-[rgba(247,247,247,0.1)] text-sm py-2 px-3 w-full;
 }
 
 /* Space theme styles */
-.space-background {
-  @apply fixed inset-0 z-0;
-  background: radial-gradient(ellipse at center, #1a1a1a 0%, #121212 100%);
+.space-theme {
+  background: #000;
+  overflow: hidden;
 }
 
-.space-stars {
-  @apply fixed inset-0 z-10;
+.stars {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: 
+    radial-gradient(1px 1px at 10px 10px, rgba(255, 255, 255, 0.1), rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 20px 50px, rgba(255, 255, 255, 0.05), rgba(0,0,0,0)),
+    radial-gradient(2px 2px at 30px 100px, rgba(255, 255, 255, 0.1), rgba(0,0,0,0)),
+    radial-gradient(2px 2px at 40px 60px, rgba(255, 255, 255, 0.05), rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 50px 200px, rgba(255, 255, 255, 0.1), rgba(0,0,0,0));
+  background-repeat: repeat;
+  background-size: 250px 250px;
+  animation: twinkle 10s infinite;
+  opacity: 0.5;
 }
 
-.space-grid {
-  @apply fixed inset-0 z-20;
-  mask-image: radial-gradient(circle at center, transparent 0%, transparent 60%, rgba(255,255,255,0.5) 80%, transparent 100%);
+.perspective-grid {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 30vh;
+  background-image: 
+    linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px);
+  background-size: 50px 50px, 50px 50px;
+  transform: perspective(500px) rotateX(60deg);
+  animation: grid-move 20s linear infinite;
 }
 
-.space-grid line {
-  stroke: var(--space-blue);
-  stroke-width: 0.5;
+.perspective-grid.top {
+  top: 0;
+  background-position: -25px -25px;
+  mask-image: linear-gradient(to bottom, rgba(0,0,0,1), rgba(0,0,0,0));
 }
 
-/* Animations */
-@keyframes fade-in-up {
-  0% {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.perspective-grid.bottom {
+  bottom: 0;
+  background-position: -25px 25px;
+  mask-image: linear-gradient(to top, rgba(0,0,0,1), rgba(0,0,0,0));
+  transform: perspective(500px) rotateX(-60deg);
 }
 
-.animate-fade-in-up {
-  animation: fade-in-up 0.5s ease-out;
+@keyframes twinkle {
+  0%, 100% {opacity: 0.3;}
+  50% {opacity: 0.4;}
 }
 
-/* Custom components */
-@layer components {
-  .card-custom {
-    @apply bg-[var(--card-background)] backdrop-blur-sm shadow-lg rounded-lg p-6;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
-  }
-
-  .btn-custom {
-    @apply bg-[#f7f7f7] text-[#121212] hover:bg-[#e0e0e0] 
-           transition-colors duration-200 px-4 py-2 text-sm font-medium rounded-md shadow-md;
-  }
-
-  .input-custom {
-    @apply bg-transparent text-[#f7f7f7] placeholder-[#f7f7f7] opacity-70
-           focus:ring-2 focus:ring-[var(--space-blue)] focus:bg-[rgba(247,247,247,0.1)]
-           rounded-md text-sm py-2 px-3;
-  }
-
-  .checkbox-custom {
-    @apply text-[var(--space-blue)] bg-transparent focus:ring-[var(--space-blue)];
-  }
-
-  .progress-custom {
-    @apply bg-[var(--space-blue)] h-2 rounded-full;
-  }
+@keyframes grid-move {
+  0% {background-position: -25px -25px, -25px -25px;}
+  100% {background-position: -75px -75px, -75px -75px;}
 }
 
-/* Additional utility classes */
-.text-shadow {
-  text-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
+/* Add these styles to your globals.css file */
 
-.backdrop-blur {
-  backdrop-filter: blur(5px);
-}
-
-/* Navigation buttons */
-.nav-button {
-  @apply px-6 py-3 text-sm bg-[rgba(247,247,247,0.1)] text-[#f7f7f7] hover:bg-[rgba(247,247,247,0.2)] 
-         shadow-md transition-all duration-300 rounded-full backdrop-blur-sm;
-}
-
-.nav-button-container {
-  @apply flex justify-between items-center mt-8;
-}
-
-/* Radio buttons */
-.radio-group {
-  @apply space-y-2;
-}
-
-.radio-option {
-  @apply flex items-center space-x-3 p-2 rounded-md transition-all duration-200
-         bg-[rgba(247,247,247,0.05)] hover:bg-[rgba(247,247,247,0.1)];
-}
-
-.radio-input {
-  @apply sr-only;
-}
-
-.radio-label {
-  @apply flex items-center cursor-pointer text-sm;
-}
-
-.radio-check {
-  @apply w-4 h-4 border border-[#f7f7f7] rounded-full flex items-center justify-center mr-2;
-}
-
-.radio-input:checked + .radio-label .radio-check::after {
-  content: '';
-  @apply w-2 h-2 bg-[#f7f7f7] rounded-full;
-}
-
-/* Progress bar */
-.progress-bar {
-  @apply bg-[rgba(247,247,247,0.1)] h-2 rounded-full overflow-hidden;
-}
-
-.progress-bar-fill {
-  @apply h-full bg-[var(--space-blue)] transition-all duration-300 ease-in-out;
-}
-
-/* Slider */
 .slider-container {
-  @apply relative w-full h-12 my-8;
+  width: 100%;
+  padding: 1rem 0;
 }
 
-.slider-input {
-  @apply absolute top-0 left-0 w-full h-full opacity-0 cursor-pointer z-20;
-}
-
+/* Ensure these styles are applied to your Slider component */
 .slider-track {
-  @apply absolute top-1/2 left-0 h-2 bg-[#f7f7f7] rounded-full transition-all duration-200 transform -translate-y-1/2;
+  height: 4px;
+  background-color: #e2e8f0;
+  position: relative;
+  border-radius: 2px;
+}
+
+.slider-range {
+  height: 100%;
+  background-color: #3b82f6;
+  position: absolute;
+  border-radius: 2px;
 }
 
 .slider-thumb {
-  @apply absolute top-1/2 w-6 h-6 bg-[#f7f7f7] rounded-full shadow-md transform -translate-x-1/2 -translate-y-1/2
-         transition-all duration-200 z-10;
-}
-
-.slider-value {
-  @apply text-center font-semibold mt-4;
-}
-
-/* Radio and Checkbox styles */
-.option-group {
-  @apply space-y-2;
-}
-
-.option-item {
-  @apply flex items-center space-x-3 p-2 rounded-md transition-all duration-200;
-}
-
-.option-input {
-  @apply sr-only;
-}
-
-.option-label {
-  @apply flex items-center cursor-pointer text-sm w-full;
-}
-
-.option-check {
-  @apply w-5 h-5 border-2 border-[#f7f7f7] flex items-center justify-center mr-2 transition-all duration-200;
-}
-
-.option-input:checked + .option-label .option-check {
-  @apply bg-[#f7f7f7] border-[#f7f7f7];
-}
-
-/* Radio specific styles */
-.radio .option-check {
-  @apply rounded-full;
-}
-
-/* Checkbox specific styles */
-.checkbox .option-check {
-  @apply rounded-sm;
-}
-
-.multiple-select-text {
-  @apply text-xs text-[#f7f7f7] font-semibold mt-1;
-}
-
-.content-wrapper {
-  max-height: calc(100vh - 8rem);
-  overflow-y: auto;
-  mask-image: linear-gradient(to bottom, transparent, black 10%, black 90%, transparent);
-}
-
-.question-card {
-  width: 100%;
-  max-width: 36rem; /* Adjust this value as needed */
-  margin: 0 auto;
-}
-
-.analysis-result-container {
-  height: calc(100vh - 100px); /* Adjust based on your logo height */
-  overflow-y: auto;
-  padding-top: 50vh; /* Start content in the middle of the screen */
-}
-
-.analysis-result-content {
-  mask-image: linear-gradient(to top, 
-    rgba(0, 0, 0, 1) 0%,
-    rgba(0, 0, 0, 1) calc(100% - 100px),
-    rgba(0, 0, 0, 0) 100%
-  );
+  width: 20px;
+  height: 20px;
+  background-color: #3b82f6;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  cursor: pointer;
 }
