@@ -1,89 +1,74 @@
 'use client'
 
 import React from 'react'
+import { Slider } from "@/components/ui/slider"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Label } from "@/components/ui/label"
 import { Question, QuestionOption } from '../data/questions'
 
 interface QuestionRendererProps {
-  question: Question
-  onAnswer: (answer: string | number | string[]) => void
+  question: Question;
+  onAnswer: (answer: string | number | string[]) => void;
+  answers: Record<string, string | number | string[]>;
 }
 
-const QuestionRenderer: React.FC<QuestionRendererProps> = ({ question, onAnswer }) => {
-  return (
-    <div className="question-container">
-      <h2>{question.question}</h2>
-      {question.type === 'text' && (
-        <input
-          type="text"
-          onChange={(e) => onAnswer(e.target.value)}
-          className="input-custom"
-        />
-      )}
-      {question.type === 'number' && (
-        <input
-          type="number"
-          onChange={(e) => onAnswer(parseInt(e.target.value, 10))}
-          className="input-custom"
-        />
-      )}
-      {question.type === 'choice' && question.options && (
-        <select onChange={(e) => onAnswer(e.target.value)} className="input-custom">
-          {question.options.map((option: QuestionOption) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-      )}
-      {question.type === 'slider' && (
-        <input
-          type="range"
-          min={question.min}
-          max={question.max}
-          step={question.step}
-          defaultValue={question.defaultValue}
-          onChange={(e) => onAnswer(parseInt(e.target.value, 10))}
-          className="slider-custom"
-        />
-      )}
-      {question.type === 'radio' && question.options && (
-        <div>
-          {question.options.map((option: QuestionOption) => (
-            <label key={option.value} className="block">
-              <input
-                type="radio"
-                name={question.id}
-                value={option.value}
-                onChange={(e) => onAnswer(e.target.value)}
-                className="radio-custom"
-              />
-              {option.label}
-            </label>
-          ))}
+const QuestionRenderer: React.FC<QuestionRendererProps> = ({ question, onAnswer, answers }) => {
+  switch (question.type) {
+    case "radio":
+      return (
+        <div className="question-container">
+          <h2>{question.question}</h2>
+          <RadioGroup onValueChange={onAnswer} value={answers[question.id] as string}>
+            {question.options?.map((option) => (
+              <div key={option.value} className="flex items-center space-x-2">
+                <RadioGroupItem value={option.value} id={option.value} />
+                <Label htmlFor={option.value}>{option.label}</Label>
+              </div>
+            ))}
+          </RadioGroup>
         </div>
-      )}
-      {question.type === 'checkbox' && question.options && (
-        <div>
-          {question.options.map((option: QuestionOption) => (
-            <label key={option.value} className="block">
-              <input
-                type="checkbox"
-                name={question.id}
-                value={option.value}
-                onChange={() => {
-                  const checkboxes = document.querySelectorAll<HTMLInputElement>(`input[name="${question.id}"]:checked`);
-                  const values = Array.from(checkboxes).map(cb => cb.value);
-                  onAnswer(values);
+      )
+    case "checkbox":
+      return (
+        <div className="question-container">
+          <h2>{question.question}</h2>
+          {question.options?.map((option) => (
+            <div key={option.value} className="flex items-center space-x-2">
+              <Checkbox
+                id={option.value}
+                checked={(answers[question.id] as string[] || []).includes(option.value)}
+                onCheckedChange={(checked) => {
+                  const currentAnswers = answers[question.id] as string[] || []
+                  if (checked) {
+                    onAnswer([...currentAnswers, option.value])
+                  } else {
+                    onAnswer(currentAnswers.filter(v => v !== option.value))
+                  }
                 }}
-                className="checkbox-custom"
               />
-              {option.label}
-            </label>
+              <Label htmlFor={option.value}>{option.label}</Label>
+            </div>
           ))}
         </div>
-      )}
-    </div>
-  )
+      )
+    case "slider":
+      return (
+        <div className="question-container">
+          <h2>{question.question}</h2>
+          <Slider
+            min={question.min}
+            max={question.max}
+            step={question.step}
+            value={[answers[question.id] as number || question.defaultValue || 0]}
+            onValueChange={(value) => onAnswer(value[0])}
+          />
+          <p>{answers[question.id] || question.defaultValue}</p>
+        </div>
+      )
+    default:
+      return null
+  }
 }
 
 export default QuestionRenderer

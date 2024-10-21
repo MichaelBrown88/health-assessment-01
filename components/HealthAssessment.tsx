@@ -209,7 +209,11 @@ export const HealthAssessment: React.FC = () => {
               ) : !contactInfoSubmitted ? (
                 <ContactForm onSubmit={handleContactInfoSubmit} error={submitError} />
               ) : (
-                <AnalysisResult answers={answers} healthCalculations={healthCalculations} onRetake={handleRetake} />
+                <div className="analysis-result-container">
+                  <div className="analysis-result-content">
+                    <AnalysisResult answers={answers} healthCalculations={healthCalculations} onRetake={handleRetake} />
+                  </div>
+                </div>
               )}
             </CardContent>
             <CardFooter>

@@ -1,21 +1,23 @@
-export type QuestionOption = {
+export interface QuestionOption {
   value: string;
   label: string;
-};
+}
 
-export type Question = {
+export interface Question {
   id: string;
   question: string;
-  type: 'text' | 'number' | 'choice' | 'slider' | 'radio' | 'checkbox';
+  type: 'radio' | 'checkbox' | 'slider';
   options?: QuestionOption[];
   min?: number;
   max?: number;
   step?: number;
   defaultValue?: number;
   condition?: (answers: AnswerType) => boolean;
-};
+}
 
-export type AnswerType = Record<string, string | number | string[]>;
+export interface AnswerType {
+  [key: string]: string | number | string[];
+}
 
 export const questions: Question[] = [
   { 
