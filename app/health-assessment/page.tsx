@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback, useReducer } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
+import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { questions, AnswerType } from '@/data/questions'
 import { useHealthCalculations } from '@/hooks/useHealthCalculations'
