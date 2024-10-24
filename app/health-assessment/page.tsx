@@ -5,11 +5,10 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { questions, AnswerType } from '@/data/questions'
-import { useHealthCalculations } from '@/hooks/useHealthCalculations'
 import { ContactForm } from '@/components/ContactForm'
-import { AnalysisResult } from '@/components/AnalysisResult'
 import { SpaceTheme } from '@/components/SpaceTheme'
 import QuestionRenderer from '@/components/QuestionRenderer'
+import { useRouter } from 'next/navigation'
 
 // Reducer for answers state
 type AnswerAction = 
@@ -33,8 +32,7 @@ export default function HealthAssessmentPage() {
   const [showResults, setShowResults] = useState(false)
   const [contactInfoSubmitted, setContactInfoSubmitted] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
-
-  const healthCalculations = useHealthCalculations(answers)
+  const router = useRouter()
 
   const handleAnswer = useCallback((value: string | number | string[]) => {
     dispatch({ type: 'SET_ANSWER', payload: { id: questions[currentQuestion].id, value } })
@@ -75,19 +73,13 @@ export default function HealthAssessmentPage() {
   const handleContactInfoSubmit = useCallback((name: string, email: string) => {
     if (name && email) {
       console.log("User Contact Info:", { name, email, answers })
-      setContactInfoSubmitted(true)
+      setContactInfoSubmitted(true) // Add this line
+      const encodedAnswers = encodeURIComponent(JSON.stringify(answers))
+      router.push(`/analysis-result?answers=${encodedAnswers}`)
     } else {
       setSubmitError("Please fill in both name and email.")
     }
-  }, [answers])
-
-  const handleRetake = useCallback(() => {
-    dispatch({ type: 'RESET_ANSWERS' })
-    setShowResults(false)
-    setContactInfoSubmitted(false)
-    setSubmitError(null)
-    setCurrentQuestion(0)
-  }, [])
+  }, [answers, router])
 
   return (
     <div className={`min-h-screen flex flex-col items-center ${showResults && contactInfoSubmitted ? 'justify-start pt-24' : 'justify-center'} text-center overflow-hidden`}>
@@ -119,16 +111,10 @@ export default function HealthAssessmentPage() {
                   />
                 </div>
               </div>
-            ) : !contactInfoSubmitted ? (
+            ) : (
               <div className="space-y-6">
                 <h3 className="text-xl font-semibold mb-4 text-center text-[#f7f7f7]">Almost there! Please provide your contact information.</h3>
                 <ContactForm onSubmit={handleContactInfoSubmit} error={submitError} />
-              </div>
-            ) : (
-              <div className="analysis-result-container">
-                <div className="analysis-result-content">
-                  <AnalysisResult answers={answers} healthCalculations={healthCalculations} onRetake={handleRetake} />
-                </div>
               </div>
             )}
           </CardContent>
