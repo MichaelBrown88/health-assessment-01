@@ -34,7 +34,7 @@ export const SpaceTheme: React.FC = () => {
 
   return (
     <>
-      <div className="absolute inset-0 z-0">
+      <div className="fixed inset-0 z-0">
         <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <radialGradient id="mesh-grad-1" cx="20%" cy="20%" r="50%">
@@ -52,7 +52,7 @@ export const SpaceTheme: React.FC = () => {
           {generateStars()}
         </svg>
       </div>
-      <svg className="absolute inset-0 w-full h-full z-10" preserveAspectRatio="xMidYMid slice">
+      <svg className="fixed inset-0 w-full h-full z-10" preserveAspectRatio="xMidYMid slice">
         <defs>
           <radialGradient id="fade-grid" cx="50%" cy="50%" r="70%" fx="50%" fy="50%">
             <stop offset="0%" stopColor="rgba(255,255,255,0)" />

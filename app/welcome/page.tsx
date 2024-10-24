@@ -3,7 +3,6 @@
 import React from 'react'
 import { Button } from "@/components/ui/button"
 import { SpaceTheme } from "@/components/SpaceTheme"
-import Header from "@/components/Header"
 import { useRouter } from 'next/navigation'
 
 export default function WelcomePage() {
@@ -21,8 +20,7 @@ export default function WelcomePage() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center text-center relative">
       <SpaceTheme />
-      <Header />
-      <div className="relative z-20 max-w-4xl mx-auto px-4 mt-20">
+      <div className="relative z-20 max-w-4xl mx-auto px-4">
         <h1 
           className="text-5xl md:text-7xl font-extrabold mb-6 text-white leading-tight animate-fade-in-up"
           style={{ textShadow: `2px 2px 4px rgba(0,0,0,0.5)` }}

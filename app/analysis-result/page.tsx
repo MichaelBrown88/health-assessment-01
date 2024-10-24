@@ -104,9 +104,9 @@ export default function AnalysisResultPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-start pt-24 text-center overflow-hidden">
+    <div className="min-h-screen flex flex-col items-center justify-start overflow-hidden">
       <SpaceTheme />
-      <div className="relative z-10 w-full max-w-4xl mx-auto px-4 py-8 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 6rem)' }}>
+      <div className="relative z-10 w-full max-w-4xl mx-auto px-4 py-8 overflow-y-auto" style={{ maxHeight: '100vh' }}>
         <Card className="card-custom border-none bg-opacity-50 backdrop-blur-md p-6">
           <CardContent className="space-y-6">
             <div className="analysis-result-container">
