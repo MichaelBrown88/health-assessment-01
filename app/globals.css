@@ -184,3 +184,49 @@ input[type="text"], input[type="number"], input[type="email"], select {
   transform: translate(-50%, -50%);
   cursor: pointer;
 }
+
+/* Add this to your globals.css file */
+.deep-space-gradient {
+  background: linear-gradient(90deg, #0a192f 0%, #3a6073 100%);
+}
+
+/* Deep space blue gradient border */
+.deep-space-border {
+  position: relative;
+}
+
+.deep-space-border::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  border-radius: inherit;
+  padding: 2px; /* Increased from 1px to 2px */
+  background: linear-gradient(90deg, #0a192f 0%, #3a6073 100%);
+  -webkit-mask: 
+     linear-gradient(#fff 0 0) content-box, 
+     linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* Pill-shaped gradient tabs */
+.deep-space-gradient {
+  background: linear-gradient(90deg, #0a192f 0%, #3a6073 100%);
+}
+
+/* Override Radix UI's default styles for TabsTrigger */
+.TabsTrigger {
+  all: unset;
+}
+
+.TabsTrigger[data-state="active"] {
+  background: linear-gradient(90deg, #0a192f 0%, #3a6073 100%);
+}
+
+.TabsTrigger[data-state="inactive"] {
+  background: rgba(107, 114, 128, 0.5); /* This is equivalent to bg-gray-700/50 */
+}

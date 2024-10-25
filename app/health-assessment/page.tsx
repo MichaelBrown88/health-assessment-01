@@ -9,6 +9,7 @@ import { ContactForm } from '@/components/ContactForm'
 import { SpaceTheme } from '@/components/SpaceTheme'
 import QuestionRenderer from '@/components/QuestionRenderer'
 import { useRouter } from 'next/navigation'
+import { cn } from "@/lib/utils"; // Make sure you have this utility function
 
 // Reducer for answers state
 type AnswerAction = 
@@ -91,9 +92,11 @@ export default function HealthAssessmentPage() {
               <div className="space-y-6">
                 <div className="mb-4">
                   <Label className="text-sm font-medium mb-2 block text-[#f7f7f7] opacity-80">Progress</Label>
-                  <div className="h-2 bg-[rgba(247,247,247,0.2)] rounded-full overflow-hidden">
+                  <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
                     <div 
-                      className="h-full bg-[#0a192f] rounded-full transition-all duration-300 ease-in-out" 
+                      className={cn("h-full deep-space-gradient transition-all duration-300 ease-out", 
+                        currentQuestion === 0 && "w-0"
+                      )}
                       style={{width: `${((currentQuestion + 1) / questions.length) * 100}%`}}
                     ></div>
                   </div>

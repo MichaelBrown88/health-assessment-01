@@ -1,14 +1,14 @@
 export interface HealthCalculations {
-  bmi: number
-  bmiCategory: string
-  bmr: number
-  tdee: number
-  recommendedCalories: number
-  proteinGrams: number
-  carbGrams: number
-  fatGrams: number
-  bodyFat: number | null
-  isBodyFatEstimated: boolean
-  idealWeightLow: number
-  idealWeightHigh: number
+  bmi: number | null;
+  bmiCategory: string | null;
+  bmr: number | null;
+  tdee: number | null;
+  recommendedCalories: number | null;
+  proteinGrams: number | null;
+  carbGrams: number | null;
+  fatGrams: number | null;
+  bodyFat: number | null;
+  isBodyFatEstimated: boolean;
+  idealWeightLow: number | null;
+  idealWeightHigh: number | null;
 }

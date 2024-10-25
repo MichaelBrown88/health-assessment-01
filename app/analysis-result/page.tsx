@@ -3,31 +3,51 @@
 import React, { useCallback, useMemo } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { CheckCircle, MinusCircle, XCircle, AlertTriangle } from "lucide-react"
+import { AlertTriangle } from "lucide-react"
 import { AnswerType } from '@/data/questions'
 import { useHealthCalculations } from '@/hooks/useHealthCalculations'
-import { calculateScore, getTrafficLightColor, getFeedback, getItemScore, getHealthGoalAdvice, getGeneralAdvice } from '@/utils/healthUtils'
+import { calculateScore, getHealthGoalAdvice, getSectionFeedback } from '@/utils/healthUtils'
 import { SpaceTheme } from '@/components/SpaceTheme'
+import { BodyCompositionCard } from '@/components/BodyCompositionCard'
+import { RecommendedIntakeCard } from '@/components/RecommendedIntakeCard'
+import { Section } from '@/components/Section'
+import { cn } from "@/lib/utils"; // Make sure you have this utility function
+import { HealthScoreOverview } from '@/components/HealthScoreOverview'
+import { formatTitle } from '@/utils/healthUtils'
+
+interface HealthCalculations {
+  bmi: number | null;
+  bmiCategory: string | null;
+  bmr: number | null; // Allow bmr to be null
+  tdee: number | null;
+  bodyFat: number | null;
+  isBodyFatEstimated: boolean;
+  idealWeightLow: number | null;
+  idealWeightHigh: number | null;
+  recommendedCalories: number | null;
+  proteinGrams: number | null;
+  carbGrams: number | null;
+  fatGrams: number | null;
+}
 
 export default function AnalysisResultPage() {
   const searchParams = useSearchParams()
   const answersParam = searchParams?.get('answers')
   const answers: AnswerType = useMemo(() => {
-    if (!answersParam) return {}
+    if (!answersParam) return {};
     try {
-      return JSON.parse(decodeURIComponent(answersParam))
+      return JSON.parse(decodeURIComponent(answersParam));
     } catch (error) {
-      console.error('Error parsing answers:', error)
-      return {}
+      console.error('Error parsing answers:', error);
+      return {}; // Return an empty object on error
     }
-  }, [answersParam])
+  }, [answersParam]);
 
-  const healthCalculations = useHealthCalculations(answers)
-  const { bmi, bmiCategory, bmr, tdee, recommendedCalories, proteinGrams, carbGrams, fatGrams, bodyFat, isBodyFatEstimated, idealWeightLow, idealWeightHigh } = healthCalculations
+  // Ensure that `useHealthCalculations` is called with the correct type
+  const healthCalculations: HealthCalculations = useHealthCalculations(answers)
+  const { bmiCategory } = healthCalculations
 
   const router = useRouter()
 
@@ -36,40 +56,9 @@ export default function AnalysisResultPage() {
   }, [router])
 
   const score: number = useMemo(() => {
-    const calculatedScore = calculateScore(answers, bmi);
+    const calculatedScore = calculateScore(answers, healthCalculations);
     return typeof calculatedScore === 'number' ? calculatedScore : 0;
-  }, [answers, bmi]);
-
-  const renderFeedbackItem = (label: string, value: string, feedback: { feedback: string, color: string }, index: number) => (
-    <li key={`metric-${index}`}>
-      <div className="flex items-start space-x-2">
-        {feedback.color === "green" ? (
-          <CheckCircle className="w-5 h-5 text-green-500 mt-1 flex-shrink-0" />
-        ) : feedback.color === "amber" ? (
-          <MinusCircle className="w-5 h-5 text-yellow-500 mt-1 flex-shrink-0" />
-        ) : (
-          <XCircle className="w-5 h-5 text-red-500 mt-1 flex-shrink-0" />
-        )}
-        <div>
-          <span className="font-semibold">{label}:</span> {value}
-          <p className="text-sm mt-1">{feedback.feedback}</p>
-        </div>
-      </div>
-    </li>
-  )
-
-  const renderSection = (title: string, items: { label: string, value: string, feedback: ReturnType<typeof getFeedback> }[], score: number) => (
-    <section key={`section-${title}`} className="mb-8 bg-white bg-opacity-5 rounded-lg p-6">
-      <h3 className="text-xl font-semibold mb-4 text-left border-b border-gray-700 pb-2">{title}</h3>
-      <div className="mb-4">
-        <Progress value={score} className="h-2" />
-        <p className="text-sm mt-1 text-right">{score}%</p>
-      </div>
-      <ul className="list-none pl-0 space-y-2 text-left">
-        {items.map((item, index) => renderFeedbackItem(item.label, item.value, item.feedback, index))}
-      </ul>
-    </section>
-  )
+  }, [answers, healthCalculations]);
 
   const getSummary = () => {
     const sections = [
@@ -77,25 +66,29 @@ export default function AnalysisResultPage() {
       { title: "Diet and Nutrition", items: ["diet", "lastMeal", "mealFrequency"] },
       { title: "Rest and Recovery", items: ["sleepDuration", "sleepQuality", "recovery"] },
       { title: "Mental Health", items: ["stress", "mentalHealth", "socializing"] },
-    ]
+    ];
 
     return sections.map(section => {
-      const sectionScores = section.items.map(item => {
-        const itemScore = getItemScore(item, answers[item])
-        return { item, score: itemScore, color: getTrafficLightColor(itemScore), feedback: getFeedback(item, answers[item], itemScore) }
-      })
+      const sectionFeedback = section.items.map(item => {
+        const answer = answers[item];
+        const feedback = getSectionFeedback(item, typeof answer === 'string' ? answer : answer.toString());
+        return {
+          item,
+          ...feedback,
+        };
+      });
 
-      const averageScore = sectionScores.reduce((sum, item) => sum + item.score, 0) / sectionScores.length
+      const averageScore = sectionFeedback.reduce((sum, item) => sum + item.score, 0) / sectionFeedback.length;
 
       return {
         title: section.title,
         score: Math.round(averageScore),
-        feedbackItems: sectionScores
-      }
-    })
-  }
+        feedbackItems: sectionFeedback,
+      };
+    });
+  };
 
-  const summary = getSummary()
+  const summary = getSummary();
 
   const isGoalMisaligned = () => {
     const goals = answers.goals as string[]
@@ -103,202 +96,206 @@ export default function AnalysisResultPage() {
            (bmiCategory === "Obese" && goals.includes("muscle-gain"))
   };
 
+  const generateSummary = () => {
+    const improvements: { section: string; items: string[] }[] = [];
+    const strengths: string[] = [];
+    const sectionSummaries: { section: string; summary: string }[] = [];
+
+    summary.forEach(section => {
+      const improvementItems: string[] = [];
+      let allGreen = true;
+
+      section.feedbackItems.forEach(item => {
+        const feedbackData = getSectionFeedback(item.item, answers[item.item] as string);
+        if (feedbackData.color === 'amber' || feedbackData.color === 'red') {
+          improvementItems.push(item.item);
+          allGreen = false;
+        }
+      });
+
+      if (improvementItems.length > 0) {
+        improvements.push({ section: section.title, items: improvementItems });
+      }
+
+      if (allGreen) {
+        strengths.push(section.title);
+      }
+
+      // Add a summary for each section
+      sectionSummaries.push({
+        section: section.title,
+        summary: `Your ${section.title.toLowerCase()} score is ${section.score}%. ${section.score >= 80 ? 'Great job!' : section.score >= 60 ? 'There\'s room for improvement.' : 'This area needs attention.'}`
+      });
+    });
+
+    return { improvements, strengths, sectionSummaries };
+  };
+
+  const { improvements, strengths, sectionSummaries } = generateSummary();
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-start overflow-hidden">
       <SpaceTheme />
-      <div className="relative z-10 w-full max-w-4xl mx-auto px-4 py-8 overflow-y-auto" style={{ maxHeight: '100vh' }}>
-        <Card className="card-custom border-none bg-opacity-50 backdrop-blur-md p-6">
-          <CardContent className="space-y-6">
-            <div className="analysis-result-container">
-              <div className="analysis-result-content space-y-8 text-left">
-                <section>
-                  <h2 className="text-2xl font-bold mb-4">Your Health Analysis</h2>
-                  <div className="bg-white bg-opacity-10 p-6 rounded-lg">
-                    <h3 className="text-xl font-semibold mb-2">Overall Health Score</h3>
-                    <p className="text-3xl font-bold mb-2">{score}/100</p>
-                    <Progress value={score} className="h-2 mb-4" />
-                    <p className="mb-2">
-                      {score >= 80 ? "Excellent! You're on track for optimal health." :
-                       score >= 60 ? "Good job! There's room for improvement in some areas." :
-                       "There are several areas where you can improve your health. Let's work on that!"}
-                    </p>
-                  </div>
-                </section>
+      <div className="relative z-10 w-full max-w-4xl mx-auto px-4 py-12 overflow-y-auto space-y-8" style={{ maxHeight: '100vh' }}>
+        <h1 className="text-4xl md:text-5xl font-bold text-center py-6">Your Health Analysis</h1>
+        
+        <section className="bg-black/30 rounded-lg p-8 deep-space-border text-center">
+          <h2 className="text-3xl font-semibold mb-4">Overall Health Score</h2>
+          <div className="flex items-center justify-center mb-6">
+            <div className="text-6xl font-bold mr-2">{score}</div>
+            <div className="text-3xl font-semibold">/100</div>
+          </div>
+          <div className="h-4 w-full bg-gray-700 rounded-full overflow-hidden mb-6">
+            <div 
+              className={cn("h-full deep-space-gradient transition-all duration-300 ease-out", 
+                score === 0 && "w-0"
+              )}
+              style={{ width: `${score}%` }}
+            ></div>
+          </div>
+          <p className="text-xl mb-4">
+            {score >= 80 ? "Excellent! You're on track for optimal health." :
+             score >= 60 ? "Good job! There's room for improvement in some areas." :
+             "There are several areas where you can improve your health. Let's work on that!"}
+          </p>
+        </section>
 
-                {isGoalMisaligned() && (
-                  <Alert variant="destructive" className="mb-6">
-                    <AlertTriangle className="h-4 w-4" />
-                    <AlertTitle>Warning: Misaligned Goals</AlertTitle>
-                    <AlertDescription>
-                      Your current health status and selected goals may not be well-aligned. We recommend reassessing your goals or consulting with a healthcare professional.
-                    </AlertDescription>
-                    <Button onClick={handleRetake} className="mt-2">Retake Assessment</Button>
-                  </Alert>
-                )}
+        {isGoalMisaligned() && (
+          <Alert variant="destructive" className="mb-6 deep-space-border">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Warning: Misaligned Goals</AlertTitle>
+            <AlertDescription>
+              Your current health status and selected goals may not be well-aligned. We recommend reassessing your goals or consulting with a healthcare professional.
+            </AlertDescription>
+            <Button onClick={handleRetake} className="mt-2">Retake Assessment</Button>
+          </Alert>
+        )}
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <Card className="bg-white bg-opacity-10">
-                    <CardHeader>
-                      <CardTitle>Body Composition</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <dl className="space-y-2">
-                        <div className="flex justify-between">
-                          <dt className="font-medium">BMI:</dt>
-                          <dd>{bmi?.toFixed(1) ?? 'N/A'} ({bmiCategory ?? 'N/A'})</dd>
-                        </div>
-                        {bodyFat !== null && bodyFat !== undefined && (
-                          <div className="flex justify-between">
-                            <dt className="font-medium">Body Fat:</dt>
-                            <dd>
-                              {bodyFat.toFixed(1)}%
-                              {isBodyFatEstimated && (
-                                <span className="ml-2 text-xs bg-yellow-500 text-black px-2 py-1 rounded">Estimated</span>
-                              )}
-                            </dd>
-                          </div>
-                        )}
-                        <div className="flex justify-between">
-                          <dt className="font-medium">Weight:</dt>
-                          <dd>{answers.weight ?? 'N/A'} kg</dd>
-                        </div>
-                        <div className="flex justify-between">
-                          <dt className="font-medium">Height:</dt>
-                          <dd>{answers.height ?? 'N/A'} cm</dd>
-                        </div>
-                        {idealWeightLow !== null && idealWeightLow !== undefined && idealWeightHigh !== null && idealWeightHigh !== undefined && (
-                          <div className="flex justify-between">
-                            <dt className="font-medium">Ideal Weight Range:</dt>
-                            <dd>{idealWeightLow.toFixed(1)} - {idealWeightHigh.toFixed(1)} kg</dd>
-                          </div>
-                        )}
-                        <div className="flex justify-between">
-                          <dt className="font-medium">BMR:</dt>
-                          <dd>{bmr ? Math.round(bmr) : 'N/A'} calories/day</dd>
-                        </div>
-                        <div className="flex justify-between">
-                          <dt className="font-medium">TDEE:</dt>
-                          <dd>{tdee ? Math.round(tdee) : 'N/A'} calories/day</dd>
-                        </div>
-                      </dl>
-                    </CardContent>
-                  </Card>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <BodyCompositionCard 
+            healthCalculations={healthCalculations} 
+            answers={answers}
+            footer="Note: These calculations are estimates. For a more accurate assessment, consult a healthcare professional."
+          />
+          <RecommendedIntakeCard healthCalculations={healthCalculations} />
+        </div>
 
-                  <Card className="bg-white bg-opacity-10">
-                    <CardHeader>
-                      <CardTitle>Recommended Daily Intake</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="mb-4">Based on your goals, current status, and carbohydrate preference, we recommend:</p>
-                      <dl className="space-y-2">
-                        <div className="flex justify-between">
-                          <dt className="font-medium">Calories:</dt>
-                          <dd>{recommendedCalories ?? 'N/A'} kcal</dd>
-                        </div>
-                        <div className="flex justify-between">
-                          <dt className="font-medium">Protein:</dt>
-                          <dd>{proteinGrams ?? 'N/A'}g ({recommendedCalories ? Math.round((proteinGrams * 4 / recommendedCalories) * 100) : 'N/A'}%)</dd>
-                        </div>
-                        <div className="flex justify-between">
-                          <dt className="font-medium">Carbohydrates:</dt>
-                          <dd>{carbGrams ?? 'N/A'}g ({recommendedCalories ? Math.round((carbGrams * 4 / recommendedCalories) * 100) : 'N/A'}%)</dd>
-                        </div>
-                        <div className="flex justify-between">
-                          <dt className="font-medium">Fat:</dt>
-                          <dd>{fatGrams ?? 'N/A'}g ({recommendedCalories ? Math.round((fatGrams * 9 / recommendedCalories) * 100) : 'N/A'}%)</dd>
-                        </div>
-                      </dl>
-                      <p className="text-sm text-gray-400 mt-4">Note: These recommendations are tailored to your carbohydrate preference. Consult with a nutritionist for a personalized plan.</p>
-                    </CardContent>
-                  </Card>
-                </div>
-
-                <section className="bg-white bg-opacity-5 rounded-lg p-6">
-                  <h3 className="text-xl font-semibold mb-4">Health Goals</h3>
-                  {answers.goals && Array.isArray(answers.goals) && answers.goals.length > 0 ? (
-                    <Tabs defaultValue={answers.goals[0]}>
-                      <TabsList>
-                        {answers.goals.map((goal, index) => (
-                          <TabsTrigger key={index} value={goal}>{goal.replace('-', ' ')}</TabsTrigger>
-                        ))}
-                      </TabsList>
-                      {answers.goals.map((goal, index) => (
-                        <TabsContent key={index} value={goal}>
-                          <p>{getHealthGoalAdvice([goal])[0]}</p>
-                        </TabsContent>
-                      ))}
-                    </Tabs>
-                  ) : (
-                    <p>No health goals specified.</p>
-                  )}
-                </section>
-
-                {summary.map((section, index) => (
-                  <div key={index}>
-                    {renderSection(
-                      section.title,
-                      section.feedbackItems.map(item => ({
-                        label: item.item,
-                        value: answers[item.item] as string,
-                        feedback: item.feedback
-                      })),
-                      section.score
-                    )}
-                    <div className="mb-8 p-4 bg-white bg-opacity-5 rounded-lg">
-                      <h4 className="font-semibold mb-2">General Advice</h4>
-                      <p>{getGeneralAdvice(section.title)}</p>
-                    </div>
-                  </div>
+        <section className="bg-black/30 rounded-lg p-8 deep-space-border">
+          <h3 className="text-2xl font-semibold mb-6">Health Goals</h3>
+          {answers.goals && Array.isArray(answers.goals) && answers.goals.length > 0 ? (
+            <Tabs defaultValue={answers.goals[0]} className="bg-black/20 p-4 rounded-lg">
+              <TabsList className="mb-4 flex space-x-2 bg-transparent p-1 rounded-full">
+                {answers.goals.map((goal, index) => (
+                  <TabsTrigger 
+                    key={index} 
+                    value={goal}
+                    className="px-4 py-2 rounded-full transition-all duration-300 ease-in-out
+                               data-[state=active]:deep-space-gradient data-[state=active]:text-white
+                               data-[state=inactive]:bg-gray-700/50 data-[state=inactive]:text-gray-300"
+                  >
+                    {goal.replace('-', ' ')}
+                  </TabsTrigger>
                 ))}
+              </TabsList>
+              {answers.goals.map((goal, index) => (
+                <TabsContent key={index} value={goal} className="mt-4 p-4 bg-black/10 rounded-lg">
+                  <p>{getHealthGoalAdvice([goal])[0]}</p>
+                </TabsContent>
+              ))}
+            </Tabs>
+          ) : (
+            <p>No health goals specified.</p>
+          )}
+        </section>
 
-                <section className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-lg p-6 shadow-lg">
-                  <h3 className="text-2xl font-semibold mb-6 border-b border-gray-700 pb-2">Summary</h3>
-                  <div className="space-y-6">
-                    {summary.map((section, index) => (
-                      <div key={index} className={`rounded-lg p-4 ${getTrafficLightColor(section.score) === 'red' ? 'bg-red-900 bg-opacity-20' : getTrafficLightColor(section.score) === 'amber' ? 'bg-yellow-900 bg-opacity-20' : 'bg-green-900 bg-opacity-20'}`}>
-                        <h5 className="font-medium mb-2">{section.title}</h5>
-                        <Progress value={section.score} className="h-2 mb-2" />
-                        <p className="text-sm">{section.score}% - {getTrafficLightColor(section.score) === 'green' ? 'Excellent' : getTrafficLightColor(section.score) === 'amber' ? 'Good, but room for improvement' : 'Needs attention'}</p>
-                      </div>
+        <HealthScoreOverview scores={summary.map(s => ({ title: s.title, score: s.score }))} />
+        
+        {summary.map((section, index) => (
+          <Section
+            key={index}
+            title={formatTitle(section.title)}
+            items={section.feedbackItems.map(item => {
+              const value = answers[item.item];
+              const stringValue = Array.isArray(value) ? value.join(', ') : String(value);
+              const feedbackData = getSectionFeedback(item.item, stringValue);
+              return {
+                label: formatTitle(item.item),
+                value: stringValue,
+                feedback: feedbackData
+              };
+            })}
+          />
+        ))}
+
+        <section className="bg-black/30 rounded-lg p-8 deep-space-border">
+          <h3 className="text-2xl font-semibold mb-6">Health Analysis Summary</h3>
+          
+          {improvements.length > 0 && (
+            <div className="mb-6">
+              <h4 className="text-xl font-medium mb-4">Areas for Improvement</h4>
+              {improvements.map((area, index) => (
+                <div key={index} className="mb-4">
+                  <h5 className="text-lg font-medium">{area.section}</h5>
+                  <ul className="list-disc pl-5 space-y-2">
+                    {area.items.map((item, itemIndex) => (
+                      <li key={itemIndex} className="text-yellow-400">{item}</li>
                     ))}
-                  </div>
-                  <div className="mt-6">
-                    <h4 className="font-semibold mb-2">Areas for Improvement:</h4>
-                    <ul className="list-disc pl-5">
-                      {summary.filter(section => getTrafficLightColor(section.score) !== 'green').map((section, index) => (
-                        <li key={index}>{section.title}</li>
-                      ))}
-                    </ul>
-                  </div>
-                  <div className="mt-4">
-                    <h4 className="font-semibold mb-2">Areas of Strength:</h4>
-                    <ul className="list-disc pl-5">
-                      {summary.filter(section => getTrafficLightColor(section.score) === 'green').map((section, index) => (
-                        <li key={index}>{section.title}</li>
-                      ))}
-                    </ul>
-                  </div>
-                </section>
-
-                <section className="bg-white bg-opacity-5 rounded-lg p-6">
-                  <h3 className="text-xl font-semibold mb-4">Next Steps</h3>
-                  <p className="mb-4">To improve your overall health score:</p>
-                  <ol className="list-decimal list-inside space-y-2 mb-6">
-                    <li>Focus on the areas for improvement identified in your summary.</li>
-                    <li>Continue maintaining your areas of strength.</li>
-                    <li>Track your progress regularly and adjust your plan as needed.</li>
-                    <li>Consult with healthcare professionals for personalized advice, especially before making significant changes to your diet or exercise routine.</li>
-                  </ol>
-                  <p className="mb-4">If you&apos;d like expert guidance on implementing these steps and creating a personalized plan to achieve your health goals, we&apos;re here to help.</p>
-                  <Button onClick={() => window.open('https://us.calendar.onefitnessstudio.com/widget/booking/WO8S14kouB3wo6cg7fkD', '_blank')} className="w-full">
-                    Book a Free Discovery Call
-                  </Button>
-                  <p className="text-sm text-gray-400 mt-2 text-center">Speak with one of our health experts to create your personalized action plan.</p>
-                </section>
-              </div>
+                  </ul>
+                </div>
+              ))}
             </div>
-          </CardContent>
-        </Card>
+          )}
+          
+          {strengths.length > 0 && (
+            <div className="mb-6">
+              <h4 className="text-xl font-medium mb-4">Your Strengths</h4>
+              <ul className="list-disc pl-5 space-y-2">
+                {strengths.map((item, index) => (
+                  <li key={index} className="text-green-400">{item}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <div className="mt-6">
+            <h4 className="text-xl font-medium mb-4">Section Summaries</h4>
+            {sectionSummaries.map((item, index) => (
+              <p key={index} className="mb-2">
+                <span className="font-medium">{item.section}:</span> {item.summary}
+              </p>
+            ))}
+          </div>
+
+          <div className="mt-6">
+            <p className="text-lg">
+              Focus on improving the specific areas highlighted above. Maintain your strong areas and consider consulting with a healthcare professional for personalized advice.
+            </p>
+          </div>
+        </section>
+
+        <section className="bg-black/30 rounded-lg p-8 deep-space-border">
+          <h3 className="text-2xl font-semibold mb-6">Your Next Steps</h3>
+          <p className="mb-4">Based on your personalized health analysis, consider these key actions:</p>
+          <ol className="list-decimal list-inside space-y-2 mb-6">
+            <li>Review your section summaries and focus on improving your lowest-scoring areas</li>
+            <li>Implement the specific advice given for your chosen health goals</li>
+            <li>Track your progress using the metrics provided in your body composition analysis</li>
+            <li>Consult with a health professional for personalized guidance on complex health matters</li>
+          </ol>
+          <div className="mt-8 text-center">
+            <p className="text-lg mb-4">Ready to dive deeper into your health journey with expert guidance?</p>
+            <Button 
+              onClick={() => {/* Add your booking logic here */}}
+              className="px-6 py-3 text-lg font-semibold deep-space-gradient"
+            >
+              Book Your Free Health Strategy Session
+            </Button>
+          </div>
+        </section>
+
+        <p className="mt-4 text-sm text-gray-300">
+          Remember, these suggestions are based on general guidelines. For a tailored approach to achieving your health goals, consider consulting with a health professional.
+        </p>
       </div>
     </div>
   )
