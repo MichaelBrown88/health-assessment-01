@@ -203,7 +203,7 @@ input[type="text"], input[type="number"], input[type="email"], select {
   bottom: 0;
   left: 0;
   border-radius: inherit;
-  padding: 2px; /* Increased from 1px to 2px */
+  padding: 2px;
   background: linear-gradient(90deg, #0a192f 0%, #3a6073 100%);
   -webkit-mask: 
      linear-gradient(#fff 0 0) content-box, 

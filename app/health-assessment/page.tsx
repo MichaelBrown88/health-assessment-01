@@ -30,8 +30,7 @@ const answerReducer = (state: AnswerType, action: AnswerAction): AnswerType => {
 export default function HealthAssessmentPage() {
   const [answers, dispatch] = useReducer(answerReducer, {})
   const [currentQuestion, setCurrentQuestion] = useState(0)
-  const [showResults, setShowResults] = useState(false)
-  const [contactInfoSubmitted, setContactInfoSubmitted] = useState(false)
+  const [showContactForm, setShowContactForm] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const router = useRouter()
 
@@ -52,7 +51,7 @@ export default function HealthAssessmentPage() {
     if (nextQuestion < questions.length) {
       setCurrentQuestion(nextQuestion)
     } else {
-      setShowResults(true)
+      setShowContactForm(true)
     }
   }, [currentQuestion, answers])
 
@@ -74,7 +73,6 @@ export default function HealthAssessmentPage() {
   const handleContactInfoSubmit = useCallback((name: string, email: string) => {
     if (name && email) {
       console.log("User Contact Info:", { name, email, answers })
-      setContactInfoSubmitted(true) // Add this line
       const encodedAnswers = encodeURIComponent(JSON.stringify(answers))
       router.push(`/analysis-result?answers=${encodedAnswers}`)
     } else {
@@ -88,7 +86,7 @@ export default function HealthAssessmentPage() {
       <div className="relative z-10 w-full max-w-4xl mx-auto px-4 py-8">
         <Card className="card-custom border-none bg-opacity-50 backdrop-blur-md p-6">
           <CardContent className="space-y-6">
-            {!showResults ? (
+            {!showContactForm ? (
               <div className="space-y-6">
                 <div className="mb-4">
                   <Label className="text-sm font-medium mb-2 block text-[#f7f7f7] opacity-80">Progress</Label>
@@ -122,16 +120,17 @@ export default function HealthAssessmentPage() {
           </CardContent>
           <CardFooter>
             <div className="w-full flex justify-between items-center mt-4">
-              {currentQuestion > 0 && !showResults && (
-                <Button onClick={handlePrevious} className="welcome-button secondary px-4 py-2 text-sm">
+              {currentQuestion > 0 && !showContactForm && (
+                <Button variant="dark" onClick={handlePrevious} className="px-4 py-2 text-sm">
                   Previous
                 </Button>
               )}
-              {currentQuestion >= 0 && !showResults && (
+              {currentQuestion >= 0 && !showContactForm && (
                 <Button 
                   onClick={handleNext} 
                   disabled={!answers[questions[currentQuestion].id] && questions[currentQuestion].id !== 'bodyFat'}
-                  className="welcome-button primary px-4 py-2 text-sm"
+                  variant="primary"
+                  className="px-4 py-2 text-sm"
                 >
                   {currentQuestion === questions.length - 1 ? "Get Your Analysis" : "Next"}
                 </Button>

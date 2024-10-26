@@ -34,14 +34,16 @@ export default function WelcomePage() {
           <Button 
             onClick={handleStart} 
             size="lg" 
-            className="welcome-button primary"
+            variant="primary"
+            className="welcome-button"
           >
             Continue as Guest
           </Button>
           <Button 
             onClick={handleLogin} 
             size="lg" 
-            className="welcome-button secondary"
+            variant="dark"
+            className="welcome-button"
           >
             Login / Sign Up
           </Button>

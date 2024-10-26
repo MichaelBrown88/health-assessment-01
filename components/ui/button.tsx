@@ -18,6 +18,9 @@ const buttonVariants = cva(
           "bg-secondary text-secondary-foreground hover:bg-secondary/80",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
+        dark: "bg-[#121212] text-[#f7f7f7] hover:bg-[#1a1a1a] deep-space-border",
+        primary: "text-[#f7f7f7] bg-gradient-to-r from-[#0a192f] to-[#3a6073] hover:opacity-90",
+        deepSpaceBorder: "relative text-[#f7f7f7] hover:bg-[rgba(247,247,247,0.1)] before:content-[''] before:absolute before:inset-0 before:rounded-md before:p-[2px] before:bg-gradient-to-r before:from-[#0a192f] before:to-[#3a6073] before:-z-10 before:pointer-events-none",
       },
       size: {
         default: "h-10 px-4 py-2",
