@@ -13,24 +13,39 @@ import { SpaceTheme } from '@/components/SpaceTheme'
 import { BodyCompositionCard } from '@/components/BodyCompositionCard'
 import { RecommendedIntakeCard } from '@/components/RecommendedIntakeCard'
 import { Section } from '@/components/Section'
-import { cn } from "@/lib/utils"; // Make sure you have this utility function
+import { cn } from "@/lib/utils" // Make sure this import is present
 import { HealthScoreOverview } from '@/components/HealthScoreOverview'
 import { formatTitle } from '@/utils/healthUtils'
+import { useAISummary } from '@/hooks/useAISummary'
+import { Skeleton } from "@/components/ui/skeleton"
 
-interface HealthCalculations {
-  bmi: number | null;
-  bmiCategory: string | null;
-  bmr: number | null; // Allow bmr to be null
-  tdee: number | null;
-  bodyFat: number | null;
-  isBodyFatEstimated: boolean;
-  idealWeightLow: number | null;
-  idealWeightHigh: number | null;
-  recommendedCalories: number | null;
-  proteinGrams: number | null;
-  carbGrams: number | null;
-  fatGrams: number | null;
-}
+const getSummary = (answers: AnswerType) => {
+  const sections = [
+    { title: "Exercise Habits", items: ["activityLevel", "exerciseIntensity", "exerciseDuration"] },
+    { title: "Diet and Nutrition", items: ["diet", "lastMeal", "mealFrequency"] },
+    { title: "Rest and Recovery", items: ["sleepDuration", "sleepQuality", "recovery"] },
+    { title: "Mental Health", items: ["stress", "mentalHealth", "socializing"] },
+  ];
+
+  return sections.map(section => {
+    const sectionFeedback = section.items.map(item => {
+      const answer = answers[item];
+      const feedback = getSectionFeedback(item, typeof answer === 'string' ? answer : answer.toString());
+      return {
+        item,
+        ...feedback,
+      };
+    });
+
+    const averageScore = sectionFeedback.reduce((sum, item) => sum + item.score, 0) / sectionFeedback.length;
+
+    return {
+      title: section.title,
+      score: Math.round(averageScore),
+      feedbackItems: sectionFeedback,
+    };
+  });
+};
 
 export default function AnalysisResultPage() {
   const searchParams = useSearchParams()
@@ -45,9 +60,7 @@ export default function AnalysisResultPage() {
     }
   }, [answersParam]);
 
-  // Ensure that `useHealthCalculations` is called with the correct type
-  const healthCalculations: HealthCalculations = useHealthCalculations(answers)
-  const { bmiCategory } = healthCalculations
+  const healthCalculations = useHealthCalculations(answers)
 
   const router = useRouter()
 
@@ -60,41 +73,8 @@ export default function AnalysisResultPage() {
     return typeof calculatedScore === 'number' ? calculatedScore : 0;
   }, [answers, healthCalculations]);
 
-  const getSummary = () => {
-    const sections = [
-      { title: "Exercise Habits", items: ["activityLevel", "exerciseIntensity", "exerciseDuration"] },
-      { title: "Diet and Nutrition", items: ["diet", "lastMeal", "mealFrequency"] },
-      { title: "Rest and Recovery", items: ["sleepDuration", "sleepQuality", "recovery"] },
-      { title: "Mental Health", items: ["stress", "mentalHealth", "socializing"] },
-    ];
-
-    return sections.map(section => {
-      const sectionFeedback = section.items.map(item => {
-        const answer = answers[item];
-        const feedback = getSectionFeedback(item, typeof answer === 'string' ? answer : answer.toString());
-        return {
-          item,
-          ...feedback,
-        };
-      });
-
-      const averageScore = sectionFeedback.reduce((sum, item) => sum + item.score, 0) / sectionFeedback.length;
-
-      return {
-        title: section.title,
-        score: Math.round(averageScore),
-        feedbackItems: sectionFeedback,
-      };
-    });
-  };
-
-  const summary = getSummary();
-
-  const isGoalMisaligned = () => {
-    const goals = answers.goals as string[]
-    return (bmiCategory === "Underweight" && goals.includes("weight-loss")) ||
-           (bmiCategory === "Obese" && goals.includes("muscle-gain"))
-  };
+  const summary = useMemo(() => getSummary(answers), [answers]);
+  const { aiSummary, isLoading, error } = useAISummary(summary);
 
   const generateSummary = () => {
     const improvements: { section: string; items: string[] }[] = [];
@@ -132,6 +112,12 @@ export default function AnalysisResultPage() {
   };
 
   const { improvements, strengths, sectionSummaries } = generateSummary();
+
+  const isGoalMisaligned = () => {
+    const goals = answers.goals as string[]
+    return (healthCalculations.bmiCategory === "Underweight" && goals.includes("weight-loss")) ||
+           (healthCalculations.bmiCategory === "Obese" && goals.includes("muscle-gain"))
+  };
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-start overflow-hidden">
@@ -230,47 +216,64 @@ export default function AnalysisResultPage() {
         <section className="bg-black/30 rounded-lg p-8 deep-space-border">
           <h3 className="text-2xl font-semibold mb-6">Health Analysis Summary</h3>
           
-          {improvements.length > 0 && (
-            <div className="mb-6">
-              <h4 className="text-xl font-medium mb-4">Areas for Improvement</h4>
-              {improvements.map((area, index) => (
-                <div key={index} className="mb-4">
-                  <h5 className="text-lg font-medium">{area.section}</h5>
+          {isLoading ? (
+            <Skeleton className="w-full h-40" />
+          ) : error ? (
+            <Alert variant="destructive">
+              <AlertTitle>Error</AlertTitle>
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          ) : aiSummary ? (
+            <div className="prose prose-invert">
+              {aiSummary.split('\n').map((paragraph, index) => (
+                <p key={index} className="mb-4">{paragraph}</p>
+              ))}
+            </div>
+          ) : (
+            <>
+              {improvements.length > 0 && (
+                <div className="mb-6">
+                  <h4 className="text-xl font-medium mb-4">Areas for Improvement</h4>
+                  {improvements.map((area, index) => (
+                    <div key={index} className="mb-4">
+                      <h5 className="text-lg font-medium">{area.section}</h5>
+                      <ul className="list-disc pl-5 space-y-2">
+                        {area.items.map((item, itemIndex) => (
+                          <li key={itemIndex} className="text-yellow-400">{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              {strengths.length > 0 && (
+                <div className="mb-6">
+                  <h4 className="text-xl font-medium mb-4">Your Strengths</h4>
                   <ul className="list-disc pl-5 space-y-2">
-                    {area.items.map((item, itemIndex) => (
-                      <li key={itemIndex} className="text-yellow-400">{item}</li>
+                    {strengths.map((item, index) => (
+                      <li key={index} className="text-green-400">{item}</li>
                     ))}
                   </ul>
                 </div>
-              ))}
-            </div>
-          )}
-          
-          {strengths.length > 0 && (
-            <div className="mb-6">
-              <h4 className="text-xl font-medium mb-4">Your Strengths</h4>
-              <ul className="list-disc pl-5 space-y-2">
-                {strengths.map((item, index) => (
-                  <li key={index} className="text-green-400">{item}</li>
+              )}
+
+              <div className="mt-6">
+                <h4 className="text-xl font-medium mb-4">Section Summaries</h4>
+                {sectionSummaries.map((item, index) => (
+                  <p key={index} className="mb-2">
+                    <span className="font-medium">{item.section}:</span> {item.summary}
+                  </p>
                 ))}
-              </ul>
-            </div>
+              </div>
+
+              <div className="mt-6">
+                <p className="text-lg">
+                  Focus on improving the specific areas highlighted above. Maintain your strong areas and consider consulting with a healthcare professional for personalized advice.
+                </p>
+              </div>
+            </>
           )}
-
-          <div className="mt-6">
-            <h4 className="text-xl font-medium mb-4">Section Summaries</h4>
-            {sectionSummaries.map((item, index) => (
-              <p key={index} className="mb-2">
-                <span className="font-medium">{item.section}:</span> {item.summary}
-              </p>
-            ))}
-          </div>
-
-          <div className="mt-6">
-            <p className="text-lg">
-              Focus on improving the specific areas highlighted above. Maintain your strong areas and consider consulting with a healthcare professional for personalized advice.
-            </p>
-          </div>
         </section>
 
         <section className="bg-black/30 rounded-lg p-8 deep-space-border">
