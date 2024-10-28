@@ -2,6 +2,7 @@
 
 import { SpaceTheme } from './SpaceTheme'
 import { usePathname } from 'next/navigation'
+import Image from 'next/image'
 
 interface PageLayoutProps {
   children: React.ReactNode
@@ -18,9 +19,12 @@ export function PageLayout({ children, showLogo = true, className = '' }: PageLa
       <SpaceTheme />
       <div className={`relative z-20 w-full max-w-4xl mx-auto px-4 ${isWelcomePage ? 'py-0' : 'py-20'} ${className}`}>
         {showLogo && (
-          <img 
-            src="/Primary_Logo_White.png"
-            alt="Logo" 
+          <Image 
+            src="/logo.png"
+            alt="Logo"
+            width={150}
+            height={50}
+            priority
             className={`w-auto mx-auto mb-12 ${isWelcomePage ? 'h-32' : 'h-24'}`}
           />
         )}

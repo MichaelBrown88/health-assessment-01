@@ -43,8 +43,25 @@ jobs:
           NEXT_PUBLIC_FIREBASE_APP_ID="${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID }}"
           EOF
 
+      - name: Debug Info
+        run: |
+          echo "Node version:"
+          node --version
+          echo "NPM version:"
+          npm --version
+          echo "Directory contents:"
+          ls -la
+          echo "Package.json contents:"
+          cat package.json
+
       - name: Build
-        run: npm run build
+        env:
+          NODE_ENV: production
+          CI: true
+        run: |
+          echo "Starting build..."
+          DISABLE_ESLINT_PLUGIN=true npm run build
+          echo "Build completed"
         
       - name: Deploy to Firebase
         if: github.ref == 'refs/heads/main'

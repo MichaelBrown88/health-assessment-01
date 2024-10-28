@@ -2,6 +2,7 @@
 
 import React from 'react'
 import { usePathname } from 'next/navigation'
+import Image from 'next/image'
 
 export function SpaceTheme() {
   const pathname = usePathname()
@@ -11,11 +12,14 @@ export function SpaceTheme() {
     <div className="fixed inset-0 z-0">
       {showLogo && (
         <div className="absolute inset-0 z-10 flex items-start justify-center pt-20">
-          <img 
-            src="/Primary_Logo_White.png"
-            alt="Logo" 
-            className="h-40 w-auto"
-          />
+          <div className="relative h-[200px] w-[500px]"> {/* Container must be relative */}
+            <Image 
+              src="/Primary_Logo_White.png"
+              alt="Primary Logo White"
+              fill={true}
+              className="object-contain"  // or object-cover
+            />
+          </div>
         </div>
       )}
       <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
@@ -53,7 +57,6 @@ export function SpaceTheme() {
     </div>
   )
 }
-
 const generateGridLines = () => {
   const lines = []
   const numLines = 28

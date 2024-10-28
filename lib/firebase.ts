@@ -1,7 +1,8 @@
-import { initializeApp, getApps } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
-import { getAnalytics, isSupported } from 'firebase/analytics';
+import { getAuth } from 'firebase/auth';
+// If you need analytics, import it from firebase/analytics
+// import { getAnalytics } from 'firebase/analytics';
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -12,15 +13,14 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID
 };
 
-// Initialize Firebase only if it hasn't been initialized already
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApps()[0];
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+
+// Initialize Firebase services
+export const db = getFirestore(app);
 export const auth = getAuth(app);
 
-// Initialize Firestore
-export const db = getFirestore(app);
+// Remove or comment out analytics if not using it
+// const analytics = getAnalytics(app);
 
-// Initialize Analytics only on the client side
-let analytics = null;
-if (typeof window !== 'undefined') {
-  isSupported().then(yes => yes && getAnalytics(app));
-}
+export default app;
