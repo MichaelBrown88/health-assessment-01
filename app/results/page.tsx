@@ -8,7 +8,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { AlertTriangle } from "lucide-react"
 import { AnswerType } from '@/data/questions'
 import { useHealthCalculations } from '@/hooks/useHealthCalculations'
-import { calculateScore, getHealthGoalAdvice, getSectionFeedback } from '@/utils/healthUtils'
+import { calculateScore, getHealthGoalAdvice, getSectionFeedback, getMealFeedback } from '@/utils/healthUtils'
 import { BodyCompositionCard } from '@/components/BodyCompositionCard'
 import { RecommendedIntakeCard } from '@/components/RecommendedIntakeCard'
 import { Section } from '@/components/Section'
@@ -17,11 +17,14 @@ import { HealthScoreOverview } from '@/components/HealthScoreOverview'
 import { formatTitle } from '@/utils/healthUtils'
 import { useAISummary } from '@/hooks/useAISummary'
 import { Skeleton } from "@/components/ui/skeleton"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { InfoIcon } from "lucide-react"
 import { useAuth } from '@/contexts/AuthContext'
 import { saveAssessmentResult, AssessmentResult } from '@/lib/db'
 import { SpaceTheme } from '@/components/SpaceTheme'
+import { getContextualAnalysis } from '@/utils/analysisUtils'  // New utility
+import { ContextualAlert } from '@/components/ContextualAlert'
+import { ContextualAnalysis } from '@/types/ContextualAnalysis'
 
 type Section = {
   title: string;
@@ -63,15 +66,15 @@ const getSummary = (answers: AnswerType) => {
   });
 };
 
-export default function AnalysisResultPage() {
+export default function ResultsPage() {
   const searchParams = useSearchParams()
   const answersParam = searchParams?.get('answers')
   const answers: AnswerType = useMemo(() => {
     if (!answersParam) return {};
     try {
       return JSON.parse(decodeURIComponent(answersParam));
-    } catch (error) {
-      console.error('Error parsing answers:', error);
+    } catch (_) {
+      console.log('Error parsing answers:', _);
       return {}; // Return an empty object on error
     }
   }, [answersParam]);
@@ -90,7 +93,7 @@ export default function AnalysisResultPage() {
   }, [answers, healthCalculations]);
 
   const summary = useMemo(() => getSummary(answers), [answers]);
-  const { aiSummary, isLoading, error } = useAISummary(summary);
+  const { aiSummary, isLoading } = useAISummary(summary);
 
   const generateSummary = () => {
     const improvements: { section: string; items: string[] }[] = [];
@@ -144,31 +147,71 @@ export default function AnalysisResultPage() {
           userId: user.uid,
           score,
           healthCalculations: {
-            bmi: healthCalculations.bmi,  // This can be null
-            // Add other calculations
+            bmi: healthCalculations.bmi,
           },
           summary,
           date: new Date()
         };
         
         await saveAssessmentResult(result);
-        // Handle success (e.g., show notification, redirect)
-      } catch (error) {
-        console.error('Error saving assessment:', error);
-        // Handle error (e.g., show error message)
+      } catch {
+        console.log('Note: Result saving is currently disabled');
       }
     }
-  }, [user, score, healthCalculations, summary]); // Add all dependencies
+  }, [user, score, healthCalculations, summary]);
 
   useEffect(() => {
     handleSaveResult();
   }, [handleSaveResult]);
 
+  // Add console.log to see what answers we're working with
+  console.log('Current answers:', answers);
+
+  // Get analyses
+  const exerciseAnalysis = getContextualAnalysis('exercise', answers);
+  const wellbeingAnalysis = getContextualAnalysis('wellbeing', answers);
+  const nutritionAnalysis = getContextualAnalysis('nutrition', answers);
+
+  // Debug logs outside of JSX
+  useEffect(() => {
+    console.log('Current answers:', answers);
+    console.log('Exercise Analysis:', exerciseAnalysis);
+    console.log('Wellbeing Analysis:', wellbeingAnalysis);
+    console.log('Nutrition Analysis:', nutritionAnalysis);
+  }, [answers, exerciseAnalysis, wellbeingAnalysis, nutritionAnalysis]);
+
+  // Group analyses with their relevant sections
+  const sectionSummariesWithContext = sectionSummaries.map(section => {
+    let contextualAnalyses: ContextualAnalysis[] = [];
+    
+    console.log('Processing section:', section.section);
+    
+    switch (section.section) {
+      case 'Exercise Habits':
+        contextualAnalyses = exerciseAnalysis;
+        break;
+      case 'Rest and Recovery':
+      case 'Mental Health':
+        contextualAnalyses = wellbeingAnalysis;
+        break;
+      case 'Diet and Nutrition':
+        contextualAnalyses = nutritionAnalysis;
+        break;
+    }
+
+    console.log(`Analyses for ${section.section}:`, contextualAnalyses);
+
+    return {
+      ...section,
+      contextualAnalyses
+    };
+  });
+
   return (
-    <TooltipProvider>
-      <div className="min-h-screen flex flex-col items-center relative">
-        <SpaceTheme />  {/* Add this line */}
-        <div className="relative z-10 w-full max-w-4xl mx-auto px-4 py-8 overflow-y-auto space-y-8">
+    <div className="min-h-screen flex flex-col relative overflow-x-hidden">
+      <SpaceTheme />
+      <div className="relative z-20 w-full max-w-4xl mx-auto px-4 py-8 flex-1 overflow-y-auto">
+        <div className="space-y-8">
           <h1 className="text-4xl md:text-5xl font-bold text-center py-6">Your Health Analysis</h1>
           
           <section className="bg-black/30 rounded-lg p-8 deep-space-border text-center">
@@ -242,22 +285,47 @@ export default function AnalysisResultPage() {
 
           <HealthScoreOverview scores={summary.map(s => ({ title: s.title, score: s.score }))} />
           
-          {summary.map((section, index) => (
-            <Section
-              key={index}
-              title={formatTitle(section.title)}
-              items={section.feedbackItems.map(item => {
-                const value = answers[item.item];
-                const stringValue = Array.isArray(value) ? value.join(', ') : String(value);
-                const feedbackData = getSectionFeedback(item.item, stringValue);
-                return {
-                  label: formatTitle(item.item),
-                  value: stringValue,
-                  feedback: feedbackData
-                };
-              })}
-            />
-          ))}
+          {summary.map((section, index) => {
+            // Initialize with proper type
+            let contextualAnalyses: ContextualAnalysis[] = [];
+            
+            switch (section.title) {
+              case 'Exercise Habits':
+                contextualAnalyses = exerciseAnalysis;
+                break;
+              case 'Diet and Nutrition':
+                contextualAnalyses = nutritionAnalysis;
+                break;
+              case 'Rest and Recovery':
+              case 'Mental Health':
+                contextualAnalyses = wellbeingAnalysis;
+                break;
+              default:
+                contextualAnalyses = [];
+            }
+
+            return (
+              <Section
+                key={index}
+                title={formatTitle(section.title)}
+                items={section.feedbackItems.map(item => {
+                  const value = answers[item.item];
+                  const stringValue = Array.isArray(value) ? value.join(', ') : String(value);
+                  
+                  const feedbackData = item.item === 'lastMeal' 
+                    ? getMealFeedback(stringValue)
+                    : getSectionFeedback(item.item, stringValue);
+                  
+                  return {
+                    label: formatTitle(item.item),
+                    value: stringValue,
+                    feedback: feedbackData
+                  };
+                })}
+                contextualAnalyses={contextualAnalyses}
+              />
+            );
+          })}
 
           <section className="bg-black/30 rounded-lg p-8 deep-space-border">
             <h3 className="text-2xl font-semibold mb-6 flex items-center">
@@ -274,11 +342,6 @@ export default function AnalysisResultPage() {
             
             {isLoading ? (
               <Skeleton className="w-full h-40" />
-            ) : error ? (
-              <Alert variant="destructive">
-                <AlertTitle>Error</AlertTitle>
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
             ) : aiSummary ? (
               <div className="prose prose-invert">
                 {aiSummary.split('\n').map((paragraph, index) => (
@@ -316,11 +379,38 @@ export default function AnalysisResultPage() {
 
                 <div className="mt-6">
                   <h4 className="text-xl font-medium mb-4">Section Summaries</h4>
-                  {sectionSummaries.map((item, index) => (
-                    <p key={index} className="mb-2">
-                      <span className="font-medium">{item.section}:</span> {item.summary}
-                    </p>
-                  ))}
+                  {sectionSummariesWithContext.map((item, index) => {
+                    // Debug log for each section
+                    console.log(`Rendering section ${item.section}:`, {
+                      hasAnalyses: item.contextualAnalyses?.length > 0,
+                      analyses: item.contextualAnalyses
+                    });
+
+                    return (
+                      <div key={index} className="mb-6 p-4 bg-black/20 rounded-lg border border-gray-700">
+                        {/* Section title and summary */}
+                        <div className="mb-4">
+                          <h5 className="text-lg font-medium mb-2">{item.section}</h5>
+                          <p>{item.summary}</p>
+                        </div>
+                        
+                        {/* Contextual Analysis */}
+                        {item.contextualAnalyses && item.contextualAnalyses.length > 0 ? (
+                          <div className="mt-4 border-t border-gray-700 pt-4">
+                            <h6 className="text-md font-medium mb-2 text-yellow-400">Important Feedback:</h6>
+                            <ContextualAlert 
+                              analysis={item.contextualAnalyses}
+                              className="text-sm"
+                            />
+                          </div>
+                        ) : (
+                          <div className="mt-4 text-gray-400 text-sm">
+                            No specific recommendations for this section.
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
 
                 <div className="mt-6">
@@ -358,6 +448,6 @@ export default function AnalysisResultPage() {
           </p>
         </div>
       </div>
-    </TooltipProvider>
+    </div>
   )
 }

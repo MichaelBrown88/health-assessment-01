@@ -1,12 +1,9 @@
 import type { Metadata } from "next";
-import localFont from "next/font/local";
 import "./globals.css";
 import { AuthProvider } from '@/contexts/AuthContext';
+import { GeistSans } from 'geist/font/sans';
+import { TooltipProvider } from "@/components/ui/tooltip"
 
-const geistSans = localFont({
-  src: "./fonts/GeistVF.woff",
-  variable: "--font-geist-sans",
-});
 
 export const metadata: Metadata = {
   title: "Health Assessment",
@@ -23,10 +20,12 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className={geistSans.variable}>
-      <body className="min-h-screen bg-black text-white overflow-y-auto">
+    <html lang="en" className={GeistSans.className}>
+      <body>
         <AuthProvider>
-          {children}
+          <TooltipProvider>
+            {children}
+          </TooltipProvider>
         </AuthProvider>
       </body>
     </html>

@@ -3,9 +3,21 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Add these styles if they don't exist */
 html, body {
   height: 100%;
-  overflow: hidden;
+  overflow-x: hidden;
+}
+
+body {
+  overflow-y: auto;
+}
+
+/* If you're using a main layout wrapper, you might also want: */
+.main-wrapper {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
 #__next {

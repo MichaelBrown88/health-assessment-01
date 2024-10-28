@@ -1,25 +1,25 @@
 'use client'
 
 import React from 'react'
-import { usePathname } from 'next/navigation'
 import Image from 'next/image'
+import { usePathname } from 'next/navigation'
 
 export function SpaceTheme() {
   const pathname = usePathname()
-  const showLogo = pathname !== '/analysis-result'  // Hide logo only on analysis result page
-
+  const showLogo = pathname !== '/results'
+  
   return (
-    <div className="fixed inset-0 z-0">
+    <div className="fixed inset-0 z-10">
       {showLogo && (
-        <div className="absolute inset-0 z-10 flex items-start justify-center pt-20">
-          <div className="relative h-[200px] w-[500px]"> {/* Container must be relative */}
-            <Image 
-              src="/Primary_Logo_White.png"
-              alt="Primary Logo White"
-              fill={true}
-              className="object-contain"  // or object-cover
-            />
-          </div>
+        <div className="absolute top-18 left-1/2 transform -translate-x-1/2 z-50">
+          <Image
+            src="/Primary_Logo_White.png"
+            alt="Logo"
+            width={195}
+            height={195}
+            priority
+            className="mx-auto"
+          />
         </div>
       )}
       <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
@@ -57,6 +57,7 @@ export function SpaceTheme() {
     </div>
   )
 }
+
 const generateGridLines = () => {
   const lines = []
   const numLines = 28

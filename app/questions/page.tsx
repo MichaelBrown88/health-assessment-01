@@ -10,6 +10,7 @@ import { SpaceTheme } from '@/components/SpaceTheme'
 import QuestionRenderer from '@/components/QuestionRenderer'
 import { useRouter } from 'next/navigation'
 import { cn } from "@/lib/utils"; // Make sure you have this utility function
+import { useAuth } from '@/lib/auth'
 
 // Reducer for answers state
 type AnswerAction = 
@@ -33,6 +34,7 @@ export default function HealthAssessmentPage() {
   const [showContactForm, setShowContactForm] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const router = useRouter()
+  const { user } = useAuth()
 
   const handleAnswer = useCallback((value: string | number | string[]) => {
     dispatch({ type: 'SET_ANSWER', payload: { id: questions[currentQuestion].id, value } })
@@ -51,9 +53,15 @@ export default function HealthAssessmentPage() {
     if (nextQuestion < questions.length) {
       setCurrentQuestion(nextQuestion)
     } else {
-      setShowContactForm(true)
+      // Skip contact form for authenticated users
+      if (user) {
+        const encodedAnswers = encodeURIComponent(JSON.stringify(answers))
+        router.push(`/results?answers=${encodedAnswers}`) // Updated path
+      } else {
+        setShowContactForm(true)
+      }
     }
-  }, [currentQuestion, answers])
+  }, [currentQuestion, answers, user, router])
 
   const handlePrevious = useCallback(() => {
     let prevQuestion = currentQuestion - 1
@@ -74,7 +82,7 @@ export default function HealthAssessmentPage() {
     if (name && email) {
       console.log("User Contact Info:", { name, email, answers })
       const encodedAnswers = encodeURIComponent(JSON.stringify(answers))
-      router.push(`/analysis-result?answers=${encodedAnswers}`)
+      router.push(`/results?answers=${encodedAnswers}`) // Updated path
     } else {
       setSubmitError("Please fill in both name and email.")
     }

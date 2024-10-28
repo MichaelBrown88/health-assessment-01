@@ -294,8 +294,8 @@ const feedbackMap: { [key: string]: { [key: string]: { feedback: string; recomme
       feedback: "Eating 3-4 meals per day is ideal for most people.",
       recommendations: "Continue this meal frequency. Ensure each meal is balanced with proteins, complex carbs, and healthy fats."
     },
-    "5-6": {
-      feedback: "Eating 5-6 meals per day can be beneficial, especially for athletes or those with specific health goals.",
+    "5+": {
+      feedback: "Eating 5 or more meals per day can be beneficial, especially for athletes or those with specific health goals.",
       recommendations: "If this meal frequency works for you, continue. Ensure portion sizes are appropriate to avoid overconsumption."
     },
     "more-than-6": {
@@ -322,4 +322,35 @@ export const formatTitle = (title: string): string => {
     .map(word => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');
 };
+
+export function getMealFeedback(mealTime: string) {
+  const feedbackMap: Record<string, { color: string; feedback: string; recommendations: string }> = {
+    'before-6pm': {
+      color: 'green',
+      feedback: 'Early dinner time - this can be beneficial for digestion and sleep quality.',
+      recommendations: 'Consider having a light snack later if needed to maintain energy levels.'
+    },
+    '6pm-8pm': {
+      color: 'green',
+      feedback: 'Ideal dinner time for most people.',
+      recommendations: 'This timing allows proper digestion before bed.'
+    },
+    '8pm-10pm': {
+      color: 'amber',
+      feedback: 'Later dinner time.',
+      recommendations: 'Try to eat at least 2-3 hours before bedtime for optimal digestion and sleep.'
+    },
+    'after-10pm': {
+      color: 'red',
+      feedback: 'Very late dinner time.',
+      recommendations: 'Late meals can affect sleep quality and digestion. Consider eating earlier when possible.'
+    }
+  };
+
+  return feedbackMap[mealTime] || {
+    color: 'amber',
+    feedback: 'Unusual meal timing.',
+    recommendations: 'Try to maintain consistent meal times and allow 2-3 hours between your last meal and bedtime.'
+  };
+}
 

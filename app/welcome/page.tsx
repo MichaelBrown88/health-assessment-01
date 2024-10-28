@@ -23,7 +23,7 @@ export default function WelcomePage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const { signUp, signIn, signInWithGoogle } = useAuth();
+  const { signUp, signIn, signInWithGoogle, user } = useAuth();
   const router = useRouter();
 
   const handleAuth = async (e: React.FormEvent) => {
@@ -82,22 +82,35 @@ export default function WelcomePage() {
           Discover your personalized path to peak wellness with our cutting-edge health assessment.
         </p>
         <div className="flex justify-center space-x-4">
-          <Button 
-            onClick={() => router.push('/questions')} 
-            size="lg" 
-            variant="primary"
-            className="welcome-button"
-          >
-            Continue as Guest
-          </Button>
-          <Button 
-            onClick={() => setIsOpen(true)} 
-            size="lg" 
-            variant="dark"
-            className="welcome-button"
-          >
-            Login / Sign Up
-          </Button>
+          {!user ? (
+            <>
+              <Button 
+                onClick={() => router.push('/questions')} 
+                size="lg" 
+                variant="primary"
+                className="welcome-button"
+              >
+                Continue as Guest
+              </Button>
+              <Button 
+                onClick={() => setIsOpen(true)} 
+                size="lg" 
+                variant="dark"
+                className="welcome-button"
+              >
+                Login / Sign Up
+              </Button>
+            </>
+          ) : (
+            <Button 
+              onClick={() => router.push('/questions')} 
+              size="lg" 
+              variant="primary"
+              className="welcome-button"
+            >
+              Start Assessment
+            </Button>
+          )}
         </div>
 
         <div className="mt-8 text-sm text-gray-400">
