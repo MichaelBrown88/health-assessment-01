@@ -1,30 +1,17 @@
 import { useContext } from 'react'
-import { BrandingContext } from '@/components/branding'
-import { themeConfig } from '@/styles/theme/config'
+import { BrandingContext } from '@/components/BrandingContext'
+import { themeConfig, ThemeName, ThemeConfig } from '@/styles/theme/config'
 
 export const useTheme = () => {
-  const context = useContext(BrandingContext)
+  const { theme, setTheme } = useContext(BrandingContext);
   
-  const getThemeVariables = () => {
-    switch (context.theme) {
-      case 'forest':
-        return {
-          buttonGradient: themeConfig.gradients.accent,
-          buttonBorderGradient: themeConfig.gradients.accent,
-          progressBarGradient: themeConfig.gradients.accent,
-        }
-      case 'space':
-      default:
-        return {
-          buttonGradient: themeConfig.gradients.primary,
-          buttonBorderGradient: themeConfig.gradients.primary,
-          progressBarGradient: themeConfig.gradients.primary,
-        }
-    }
-  }
+  // Ensure theme is a valid theme name
+  const themeName = (theme as ThemeName) || 'default';
+  const currentTheme = themeConfig[themeName] as ThemeConfig;
 
   return {
-    ...context,
-    themeVariables: getThemeVariables(),
-  }
-}
+    theme: themeName,
+    setTheme,
+    currentTheme,
+  };
+};
