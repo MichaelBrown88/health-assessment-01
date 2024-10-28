@@ -26,6 +26,13 @@ jobs:
         with:
           node-version: '18'
           
+      - name: Debug Environment
+        run: |
+          echo "Checking Firebase Config (first few chars)..."
+          echo "API_KEY starts with: ${NEXT_PUBLIC_FIREBASE_API_KEY:0:4}..."
+          echo "AUTH_DOMAIN starts with: ${NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN:0:4}..."
+          echo "PROJECT_ID: $NEXT_PUBLIC_FIREBASE_PROJECT_ID"
+          
       - name: Install Dependencies
         run: npm install
       
