@@ -41,3 +41,28 @@ export const addData = async (data: YourDataType) => {
 export const getDocRef = (collectionName: string, docId: string) => {
   return doc(db, collectionName, docId);
 };
+
+// Define the assessment result type
+interface AssessmentResult {
+  userId: string;
+  date: Date;
+  score?: number;
+  answers?: any[]; // Replace 'any' with your specific answer type
+  // Add other fields as needed
+}
+
+// Add the saveAssessmentResult function
+export const saveAssessmentResult = async (result: AssessmentResult) => {
+  try {
+    const assessmentsRef = collection(db, 'assessments');
+    const docRef = await addDoc(assessmentsRef, {
+      ...result,
+      date: new Date(), // Add timestamp
+    });
+    console.log('Assessment saved with ID: ', docRef.id);
+    return docRef.id;
+  } catch (error) {
+    console.error('Error saving assessment: ', error);
+    throw error;
+  }
+};
