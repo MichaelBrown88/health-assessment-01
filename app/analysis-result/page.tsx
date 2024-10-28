@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useCallback, useMemo } from 'react'
+import React, { useMemo, useCallback, useEffect } from 'react'  // Add these imports
 import { useSearchParams, useRouter } from 'next/navigation'
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -9,7 +9,6 @@ import { AlertTriangle } from "lucide-react"
 import { AnswerType } from '@/data/questions'
 import { useHealthCalculations } from '@/hooks/useHealthCalculations'
 import { calculateScore, getHealthGoalAdvice, getSectionFeedback } from '@/utils/healthUtils'
-import { SpaceTheme } from '@/components/SpaceTheme'
 import { BodyCompositionCard } from '@/components/BodyCompositionCard'
 import { RecommendedIntakeCard } from '@/components/RecommendedIntakeCard'
 import { Section } from '@/components/Section'
@@ -20,6 +19,21 @@ import { useAISummary } from '@/hooks/useAISummary'
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { InfoIcon } from "lucide-react"
+import { useAuth } from '@/contexts/AuthContext'
+import { saveAssessmentResult } from '@/lib/db'
+import { SpaceTheme } from '@/components/SpaceTheme'
+
+type Section = {
+  title: string;
+  score: number;
+  feedbackItems: Array<{
+    item: string;
+    score: number;
+    color: string;
+    feedback: string;
+    recommendations: string;
+  }>;
+};
 
 const getSummary = (answers: AnswerType) => {
   const sections = [
@@ -83,11 +97,11 @@ export default function AnalysisResultPage() {
     const strengths: string[] = [];
     const sectionSummaries: { section: string; summary: string }[] = [];
 
-    summary.forEach(section => {
+    summary.forEach((section: Section) => {
       const improvementItems: string[] = [];
       let allGreen = true;
 
-      section.feedbackItems.forEach(item => {
+      section.feedbackItems.forEach((item: { item: string; color?: string }) => {
         const feedbackData = getSectionFeedback(item.item, answers[item.item] as string);
         if (feedbackData.color === 'amber' || feedbackData.color === 'red') {
           improvementItems.push(item.item);
@@ -121,11 +135,26 @@ export default function AnalysisResultPage() {
            (healthCalculations.bmiCategory === "Obese" && goals.includes("muscle-gain"))
   };
 
+  const { user } = useAuth();  // Add this line to get user from context
+
+  useEffect(() => {
+    if (user) {
+      // Save results to Firestore for logged-in users
+      saveAssessmentResult(user.uid, {
+        score,
+        healthCalculations,
+        summary,
+        answers,
+        timestamp: new Date().toISOString()
+      }).catch(console.error);
+    }
+  }, [user, score, healthCalculations, summary, answers]);
+
   return (
     <TooltipProvider>
-      <div className="min-h-screen flex flex-col items-center justify-start overflow-hidden">
-        <SpaceTheme />
-        <div className="relative z-10 w-full max-w-4xl mx-auto px-4 py-12 overflow-y-auto space-y-8" style={{ maxHeight: '100vh' }}>
+      <div className="min-h-screen flex flex-col items-center relative">
+        <SpaceTheme />  {/* Add this line */}
+        <div className="relative z-10 w-full max-w-4xl mx-auto px-4 py-8 overflow-y-auto space-y-8">
           <h1 className="text-4xl md:text-5xl font-bold text-center py-6">Your Health Analysis</h1>
           
           <section className="bg-black/30 rounded-lg p-8 deep-space-border text-center">

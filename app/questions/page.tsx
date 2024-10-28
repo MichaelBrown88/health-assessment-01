@@ -81,10 +81,10 @@ export default function HealthAssessmentPage() {
   }, [answers, router])
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center text-center overflow-hidden">
+    <div className="min-h-screen flex flex-col items-center justify-center text-center relative overflow-hidden">
       <SpaceTheme />
-      <div className="relative z-10 w-full max-w-4xl mx-auto px-4 py-8">
-        <Card className="card-custom border-none bg-opacity-50 backdrop-blur-md p-6">
+      <div className="relative z-20 w-full max-w-4xl mx-auto px-4 flex flex-col items-center justify-center min-h-screen py-20">
+        <Card className="card-custom border-none bg-opacity-50 backdrop-blur-md p-6 w-full my-auto">
           <CardContent className="space-y-6">
             {!showContactForm ? (
               <div className="space-y-6">
