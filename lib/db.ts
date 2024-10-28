@@ -42,22 +42,40 @@ export const getDocRef = (collectionName: string, docId: string) => {
   return doc(db, collectionName, docId);
 };
 
-// Define the assessment result type
-interface AssessmentResult {
-  userId: string;
-  date: Date;
-  score?: number;
-  answers?: any[]; // Replace 'any' with your specific answer type
-  // Add other fields as needed
+// Export all interfaces that are used externally
+export interface FeedbackItem {
+  score: number;
+  color: string;
+  feedback: string;
+  recommendations: string;
+  item: string;
 }
 
-// Add the saveAssessmentResult function
+export interface SummaryItem {
+  title: string;
+  score: number;
+  feedbackItems: FeedbackItem[];
+}
+
+export interface HealthCalculations {
+  bmi: number | null;
+  // Add other health calculation fields
+}
+
+export interface AssessmentResult {
+  userId: string;
+  score: number;
+  healthCalculations: HealthCalculations;
+  summary: SummaryItem[];
+  date: Date;
+}
+
 export const saveAssessmentResult = async (result: AssessmentResult) => {
   try {
     const assessmentsRef = collection(db, 'assessments');
     const docRef = await addDoc(assessmentsRef, {
       ...result,
-      date: new Date(), // Add timestamp
+      date: new Date(),
     });
     console.log('Assessment saved with ID: ', docRef.id);
     return docRef.id;

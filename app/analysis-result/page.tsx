@@ -20,7 +20,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { InfoIcon } from "lucide-react"
 import { useAuth } from '@/contexts/AuthContext'
-import { saveAssessmentResult } from '@/lib/db'
+import { saveAssessmentResult, AssessmentResult } from '@/lib/db'
 import { SpaceTheme } from '@/components/SpaceTheme'
 
 type Section = {
@@ -137,18 +137,32 @@ export default function AnalysisResultPage() {
 
   const { user } = useAuth();  // Add this line to get user from context
 
-  useEffect(() => {
+  const handleSaveResult = useCallback(async () => {
     if (user) {
-      // Save results to Firestore for logged-in users
-      saveAssessmentResult(user.uid, {
-        score,
-        healthCalculations,
-        summary,
-        answers,
-        timestamp: new Date().toISOString()
-      }).catch(console.error);
+      try {
+        const result: AssessmentResult = {
+          userId: user.uid,
+          score,
+          healthCalculations: {
+            bmi: healthCalculations.bmi,  // This can be null
+            // Add other calculations
+          },
+          summary,
+          date: new Date()
+        };
+        
+        await saveAssessmentResult(result);
+        // Handle success (e.g., show notification, redirect)
+      } catch (error) {
+        console.error('Error saving assessment:', error);
+        // Handle error (e.g., show error message)
+      }
     }
-  }, [user, score, healthCalculations, summary, answers]);
+  }, [user, score, healthCalculations, summary]); // Add all dependencies
+
+  useEffect(() => {
+    handleSaveResult();
+  }, [handleSaveResult]);
 
   return (
     <TooltipProvider>
