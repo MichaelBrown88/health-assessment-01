@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation'
 
 export function SpaceTheme() {
   const pathname = usePathname()
-  const showLogo = pathname !== '/results'
+  const showLogo = pathname !== '/results' && pathname !== '/dashboard'
   
   return (
     <div className="fixed inset-0 z-10">

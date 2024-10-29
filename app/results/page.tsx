@@ -1,6 +1,6 @@
-'use client'
+'use client';
 
-import React, { useMemo, useCallback, useEffect } from 'react'  // Add these imports
+import React, { useMemo, useCallback, useEffect, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -12,7 +12,7 @@ import { calculateScore, getHealthGoalAdvice, getSectionFeedback, getMealFeedbac
 import { BodyCompositionCard } from '@/components/BodyCompositionCard'
 import { RecommendedIntakeCard } from '@/components/RecommendedIntakeCard'
 import { Section } from '@/components/Section'
-import { cn } from "@/lib/utils" // Make sure this import is present
+import { cn } from "@/lib/utils"
 import { HealthScoreOverview } from '@/components/HealthScoreOverview'
 import { formatTitle } from '@/utils/healthUtils'
 import { useAISummary } from '@/hooks/useAISummary'
@@ -20,23 +20,29 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { InfoIcon } from "lucide-react"
 import { useAuth } from '@/contexts/AuthContext'
-import { saveAssessmentResult, AssessmentResult } from '@/lib/db'
+import { saveAssessmentResult } from '@/lib/db'
 import { SpaceTheme } from '@/components/SpaceTheme'
-import { getContextualAnalysis } from '@/utils/analysisUtils'  // New utility
+import { getContextualAnalysis } from '@/utils/analysisUtils'
 import { ContextualAlert } from '@/components/ContextualAlert'
-import { ContextualAnalysis } from '@/types/ContextualAnalysis'
 
-type Section = {
+// Add at the top with other imports/types
+interface ContextualAnalysis {
+  type: string;
+  analysis: string;
+  recommendation: string;
+}
+
+// At the top with other interfaces
+interface SectionData {
   title: string;
   score: number;
   feedbackItems: Array<{
     item: string;
-    score: number;
-    color: string;
-    feedback: string;
-    recommendations: string;
+    color?: string;
   }>;
-};
+  contextualAnalyses?: ContextualAnalysis[];
+  summary?: string;
+}
 
 const getSummary = (answers: AnswerType) => {
   const sections = [
@@ -67,27 +73,18 @@ const getSummary = (answers: AnswerType) => {
 };
 
 export default function ResultsPage() {
-  const searchParams = useSearchParams()
-  const answersParam = searchParams?.get('answers')
-  const answers: AnswerType = useMemo(() => {
-    if (!answersParam) return {};
-    try {
-      return JSON.parse(decodeURIComponent(answersParam));
-    } catch (_) {
-      console.log('Error parsing answers:', _);
-      return {}; // Return an empty object on error
-    }
-  }, [answersParam]);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { user } = useAuth();
+  const [saved, setSaved] = useState(false);
+  const answers = useMemo(() => {
+    return JSON.parse(searchParams?.get('answers') || '{}');
+  }, [searchParams]);
 
-  const healthCalculations = useHealthCalculations(answers)
-
-  const router = useRouter()
-
-  const handleRetake = useCallback(() => {
-    router.push('/health-assessment')
-  }, [router])
-
-  const score: number = useMemo(() => {
+  // Calculate all values before using them
+  const healthCalculations = useHealthCalculations(answers);
+  
+  const score = useMemo(() => {
     const calculatedScore = calculateScore(answers, healthCalculations);
     return typeof calculatedScore === 'number' ? calculatedScore : 0;
   }, [answers, healthCalculations]);
@@ -95,12 +92,82 @@ export default function ResultsPage() {
   const summary = useMemo(() => getSummary(answers), [answers]);
   const { aiSummary, isLoading } = useAISummary(summary);
 
+  // Get analyses after all calculations are done
+  const exerciseAnalysis = useMemo(() => 
+    getContextualAnalysis('exercise', answers), [answers]);
+  const wellbeingAnalysis = useMemo(() => 
+    getContextualAnalysis('wellbeing', answers), [answers]);
+  const nutritionAnalysis = useMemo(() => 
+    getContextualAnalysis('nutrition', answers), [answers]);
+
+  useEffect(() => {
+    async function saveResult() {
+      if (!user || saved || !searchParams) return;
+      
+      try {
+        if (Object.keys(answers).length === 0) return;
+
+        const metrics = {
+          bmi: healthCalculations.bmi,
+          weight: healthCalculations.weight,
+          height: healthCalculations.height,
+          bodyFat: healthCalculations.bodyFat ?? undefined,
+          overallScore: score
+        };
+
+        await saveAssessmentResult({
+          userId: user.uid,
+          timestamp: new Date(),
+          answers,
+          metrics,
+          analysis: {
+            exercise: exerciseAnalysis,
+            nutrition: nutritionAnalysis,
+            wellbeing: wellbeingAnalysis
+          },
+          healthCalculations
+        });
+
+        setSaved(true);
+        router.push('/dashboard');
+      } catch (error) {
+        console.error('Error saving result:', error);
+      }
+    }
+
+    saveResult();
+  }, [user, saved, searchParams, router, score, healthCalculations, 
+      exerciseAnalysis, nutritionAnalysis, wellbeingAnalysis, answers]);
+
+  const handleRetake = useCallback(() => {
+    router.push('/health-assessment')
+  }, [router])
+
+  const isGoalMisaligned = () => {
+    const goals = answers.goals as string[]
+    return (healthCalculations.bmiCategory === "Underweight" && goals.includes("weight-loss")) ||
+           (healthCalculations.bmiCategory === "Obese" && goals.includes("muscle-gain"))
+  };
+
+  // Add console.log to see what answers we're working with
+  console.log('Current answers:', answers);
+
+  // Group analyses with their relevant sections
+  const sectionSummariesWithContext = summary.map(section => ({
+    ...section,
+    contextualAnalyses: [] as ContextualAnalysis[],
+    summary: `Your ${section.title.toLowerCase()} score is ${section.score}%. ${
+      section.score >= 80 ? 'Great job!' : 
+      section.score >= 60 ? 'There\'s room for improvement.' : 
+      'This area needs attention.'
+    }`
+  }));
+
   const generateSummary = () => {
     const improvements: { section: string; items: string[] }[] = [];
     const strengths: string[] = [];
-    const sectionSummaries: { section: string; summary: string }[] = [];
 
-    summary.forEach((section: Section) => {
+    summary.forEach((section: SectionData) => {
       const improvementItems: string[] = [];
       let allGreen = true;
 
@@ -119,93 +186,12 @@ export default function ResultsPage() {
       if (allGreen) {
         strengths.push(section.title);
       }
-
-      // Add a summary for each section
-      sectionSummaries.push({
-        section: section.title,
-        summary: `Your ${section.title.toLowerCase()} score is ${section.score}%. ${section.score >= 80 ? 'Great job!' : section.score >= 60 ? 'There\'s room for improvement.' : 'This area needs attention.'}`
-      });
     });
 
-    return { improvements, strengths, sectionSummaries };
+    return { improvements, strengths };
   };
 
-  const { improvements, strengths, sectionSummaries } = generateSummary();
-
-  const isGoalMisaligned = () => {
-    const goals = answers.goals as string[]
-    return (healthCalculations.bmiCategory === "Underweight" && goals.includes("weight-loss")) ||
-           (healthCalculations.bmiCategory === "Obese" && goals.includes("muscle-gain"))
-  };
-
-  const { user } = useAuth();  // Add this line to get user from context
-
-  const handleSaveResult = useCallback(async () => {
-    if (user) {
-      try {
-        const result: AssessmentResult = {
-          userId: user.uid,
-          score,
-          healthCalculations: {
-            bmi: healthCalculations.bmi,
-          },
-          summary,
-          date: new Date()
-        };
-        
-        await saveAssessmentResult(result);
-      } catch {
-        console.log('Note: Result saving is currently disabled');
-      }
-    }
-  }, [user, score, healthCalculations, summary]);
-
-  useEffect(() => {
-    handleSaveResult();
-  }, [handleSaveResult]);
-
-  // Add console.log to see what answers we're working with
-  console.log('Current answers:', answers);
-
-  // Get analyses
-  const exerciseAnalysis = getContextualAnalysis('exercise', answers);
-  const wellbeingAnalysis = getContextualAnalysis('wellbeing', answers);
-  const nutritionAnalysis = getContextualAnalysis('nutrition', answers);
-
-  // Debug logs outside of JSX
-  useEffect(() => {
-    console.log('Current answers:', answers);
-    console.log('Exercise Analysis:', exerciseAnalysis);
-    console.log('Wellbeing Analysis:', wellbeingAnalysis);
-    console.log('Nutrition Analysis:', nutritionAnalysis);
-  }, [answers, exerciseAnalysis, wellbeingAnalysis, nutritionAnalysis]);
-
-  // Group analyses with their relevant sections
-  const sectionSummariesWithContext = sectionSummaries.map(section => {
-    let contextualAnalyses: ContextualAnalysis[] = [];
-    
-    console.log('Processing section:', section.section);
-    
-    switch (section.section) {
-      case 'Exercise Habits':
-        contextualAnalyses = exerciseAnalysis;
-        break;
-      case 'Rest and Recovery':
-      case 'Mental Health':
-        contextualAnalyses = wellbeingAnalysis;
-        break;
-      case 'Diet and Nutrition':
-        contextualAnalyses = nutritionAnalysis;
-        break;
-    }
-
-    console.log(`Analyses for ${section.section}:`, contextualAnalyses);
-
-    return {
-      ...section,
-      contextualAnalyses
-    };
-  });
+  const { improvements, strengths } = generateSummary();
 
   return (
     <div className="min-h-screen flex flex-col relative overflow-x-hidden">
@@ -260,7 +246,7 @@ export default function ResultsPage() {
             {answers.goals && Array.isArray(answers.goals) && answers.goals.length > 0 ? (
               <Tabs defaultValue={answers.goals[0]} className="bg-black/20 p-4 rounded-lg">
                 <TabsList className="mb-4 flex space-x-2 bg-transparent p-1 rounded-full">
-                  {answers.goals.map((goal, index) => (
+                  {answers.goals.map((goal: string, index: number) => (
                     <TabsTrigger 
                       key={index} 
                       value={goal}
@@ -272,7 +258,7 @@ export default function ResultsPage() {
                     </TabsTrigger>
                   ))}
                 </TabsList>
-                {answers.goals.map((goal, index) => (
+                {answers.goals.map((goal: string, index: number) => (
                   <TabsContent key={index} value={goal} className="mt-4 p-4 bg-black/10 rounded-lg">
                     <p>{getHealthGoalAdvice([goal])[0]}</p>
                   </TabsContent>
@@ -286,7 +272,6 @@ export default function ResultsPage() {
           <HealthScoreOverview scores={summary.map(s => ({ title: s.title, score: s.score }))} />
           
           {summary.map((section, index) => {
-            // Initialize with proper type
             let contextualAnalyses: ContextualAnalysis[] = [];
             
             switch (section.title) {
@@ -312,14 +297,12 @@ export default function ResultsPage() {
                   const value = answers[item.item];
                   const stringValue = Array.isArray(value) ? value.join(', ') : String(value);
                   
-                  const feedbackData = item.item === 'lastMeal' 
-                    ? getMealFeedback(stringValue)
-                    : getSectionFeedback(item.item, stringValue);
-                  
                   return {
                     label: formatTitle(item.item),
                     value: stringValue,
-                    feedback: feedbackData
+                    feedback: item.item === 'lastMeal' 
+                      ? getMealFeedback(stringValue)
+                      : getSectionFeedback(item.item, stringValue)
                   };
                 })}
                 contextualAnalyses={contextualAnalyses}
@@ -379,38 +362,30 @@ export default function ResultsPage() {
 
                 <div className="mt-6">
                   <h4 className="text-xl font-medium mb-4">Section Summaries</h4>
-                  {sectionSummariesWithContext.map((item, index) => {
-                    // Debug log for each section
-                    console.log(`Rendering section ${item.section}:`, {
-                      hasAnalyses: item.contextualAnalyses?.length > 0,
-                      analyses: item.contextualAnalyses
-                    });
-
-                    return (
-                      <div key={index} className="mb-6 p-4 bg-black/20 rounded-lg border border-gray-700">
-                        {/* Section title and summary */}
-                        <div className="mb-4">
-                          <h5 className="text-lg font-medium mb-2">{item.section}</h5>
-                          <p>{item.summary}</p>
-                        </div>
-                        
-                        {/* Contextual Analysis */}
-                        {item.contextualAnalyses && item.contextualAnalyses.length > 0 ? (
-                          <div className="mt-4 border-t border-gray-700 pt-4">
-                            <h6 className="text-md font-medium mb-2 text-yellow-400">Important Feedback:</h6>
-                            <ContextualAlert 
-                              analysis={item.contextualAnalyses}
-                              className="text-sm"
-                            />
-                          </div>
-                        ) : (
-                          <div className="mt-4 text-gray-400 text-sm">
-                            No specific recommendations for this section.
-                          </div>
-                        )}
+                  {sectionSummariesWithContext.map((item: SectionData, index) => (
+                    <div key={index} className="mb-6 p-4 bg-black/20 rounded-lg border border-gray-700">
+                      {/* Section title and summary */}
+                      <div className="mb-4">
+                        <h5 className="text-lg font-medium mb-2">{item.title}</h5>
+                        <p>{item.summary}</p>
                       </div>
-                    );
-                  })}
+                      
+                      {/* Contextual Analysis */}
+                      {(item.contextualAnalyses && item.contextualAnalyses.length > 0) ? (
+                        <div className="mt-4 border-t border-gray-700 pt-4">
+                          <h6 className="text-md font-medium mb-2 text-yellow-400">Important Feedback:</h6>
+                          <ContextualAlert 
+                            analysis={item.contextualAnalyses}
+                            className="text-sm"
+                          />
+                        </div>
+                      ) : (
+                        <div className="mt-4 text-gray-400 text-sm">
+                          No specific recommendations for this section.
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
 
                 <div className="mt-6">
@@ -451,3 +426,4 @@ export default function ResultsPage() {
     </div>
   )
 }
+

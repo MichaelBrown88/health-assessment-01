@@ -3,6 +3,7 @@ import "./globals.css";
 import { AuthProvider } from '@/contexts/AuthContext';
 import { GeistSans } from 'geist/font/sans';
 import { TooltipProvider } from "@/components/ui/tooltip"
+import { UserProfile } from '@/components/UserProfile'
 
 
 export const metadata: Metadata = {
@@ -24,7 +25,12 @@ export default function RootLayout({
       <body>
         <AuthProvider>
           <TooltipProvider>
-            {children}
+            <div className="relative">
+              <div className="absolute top-4 right-4 z-50">
+                <UserProfile />
+              </div>
+              {children}
+            </div>
           </TooltipProvider>
         </AuthProvider>
       </body>
