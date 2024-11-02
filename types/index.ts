@@ -32,22 +32,20 @@ export interface HealthCalculations {
 
 // Assessment result type
 export interface AssessmentResult {
+  id: string;
   userId: string;
-  timestamp: Date;
-  answers: AnswerType;
+  timestamp: number;
   metrics: {
-    overallScore: number;
-    bmi: number;
-    bodyFat?: number;
     weight: number;
     height: number;
+    bodyFat: number;
+    overallScore: number;
+    exerciseScore: number;
+    wellbeingScore: number;
+    nutritionScore: number;
+    bmi: number;
   };
-  analysis: {
-    exercise: AnalysisItem[];
-    nutrition: AnalysisItem[];
-    wellbeing: AnalysisItem[];
-  };
-  healthCalculations: HealthCalculations;
+  answers: Record<string, string | number>;
 }
 
 // Re-export types from other files

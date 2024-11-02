@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useCallback, useEffect, useState } from 'react'
+import React, { useMemo, useCallback, useState, useEffect } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -10,7 +10,6 @@ import { AnswerType } from '@/data/questions'
 import { useHealthCalculations } from '@/hooks/useHealthCalculations'
 import { calculateScore, getHealthGoalAdvice, getSectionFeedback, getMealFeedback } from '@/utils/healthUtils'
 import { BodyCompositionCard } from '@/components/BodyCompositionCard'
-import { RecommendedIntakeCard } from '@/components/RecommendedIntakeCard'
 import { Section } from '@/components/Section'
 import { cn } from "@/lib/utils"
 import { HealthScoreOverview } from '@/components/HealthScoreOverview'
@@ -24,6 +23,7 @@ import { saveAssessmentResult } from '@/lib/db'
 import { SpaceTheme } from '@/components/SpaceTheme'
 import { getContextualAnalysis } from '@/utils/analysisUtils'
 import { ContextualAlert } from '@/components/ContextualAlert'
+import { RecommendedIntakeCard } from '@/components/RecommendedIntakeCard';
 
 // Add at the top with other imports/types
 interface ContextualAnalysis {
@@ -73,9 +73,9 @@ const getSummary = (answers: AnswerType) => {
 };
 
 export default function ResultsPage() {
+  const { user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user } = useAuth();
   const [saved, setSaved] = useState(false);
   const answers = useMemo(() => {
     return JSON.parse(searchParams?.get('answers') || '{}');
@@ -107,37 +107,41 @@ export default function ResultsPage() {
       try {
         if (Object.keys(answers).length === 0) return;
 
-        const metrics = {
-          bmi: healthCalculations.bmi,
-          weight: healthCalculations.weight,
-          height: healthCalculations.height,
-          bodyFat: healthCalculations.bodyFat ?? undefined,
-          overallScore: score
+        const result = {
+          userId: user.uid,
+          timestamp: Date.now(),
+          answers,
+          metrics: {
+            bmi: typeof healthCalculations.bmi === 'number' ? healthCalculations.bmi : null,
+            weight: typeof healthCalculations.weight === 'number' ? Number(healthCalculations.weight) : null,
+            height: typeof healthCalculations.height === 'number' ? Number(healthCalculations.height) : null,
+            bodyFat: typeof healthCalculations.bodyFat === 'number' ? Number(healthCalculations.bodyFat) : null,
+            overallScore: score
+          },
+          analysis: {
+            exercise: exerciseAnalysis ? JSON.stringify(exerciseAnalysis) : null,
+            nutrition: nutritionAnalysis ? JSON.stringify(nutritionAnalysis) : null,
+            wellbeing: wellbeingAnalysis ? JSON.stringify(wellbeingAnalysis) : null
+          },
+          healthCalculations: Object.fromEntries(
+            Object.entries(healthCalculations).map(([key, value]) => [
+              key,
+              typeof value === 'number' ? Number(value) || null :
+              typeof value === 'string' ? value : null
+            ])
+          ) as Record<string, string | number | null>
         };
 
-        await saveAssessmentResult({
-          userId: user.uid,
-          timestamp: new Date(),
-          answers,
-          metrics,
-          analysis: {
-            exercise: exerciseAnalysis,
-            nutrition: nutritionAnalysis,
-            wellbeing: wellbeingAnalysis
-          },
-          healthCalculations
-        });
-
+        await saveAssessmentResult(result);
         setSaved(true);
-        router.push('/dashboard');
       } catch (error) {
         console.error('Error saving result:', error);
       }
     }
 
     saveResult();
-  }, [user, saved, searchParams, router, score, healthCalculations, 
-      exerciseAnalysis, nutritionAnalysis, wellbeingAnalysis, answers]);
+  }, [user, saved, searchParams, answers, score, healthCalculations, 
+      exerciseAnalysis, nutritionAnalysis, wellbeingAnalysis]);
 
   const handleRetake = useCallback(() => {
     router.push('/health-assessment')
@@ -192,6 +196,44 @@ export default function ResultsPage() {
   };
 
   const { improvements, strengths } = generateSummary();
+
+  const NextStepsSection = () => (
+    <section className="bg-black/30 rounded-lg p-8 deep-space-border">
+      <h3 className="text-2xl font-semibold mb-6">Your Next Steps</h3>
+      <p className="mb-4">Based on your personalized health analysis, consider these key actions:</p>
+      <ol className="list-decimal list-inside space-y-2 mb-6">
+        <li>Review your section summaries and focus on improving your lowest-scoring areas</li>
+        <li>Implement the specific advice given for your chosen health goals</li>
+        <li>Track your progress using the metrics provided in your body composition analysis</li>
+        <li>Consult with a health professional for personalized guidance on complex health matters</li>
+      </ol>
+      <div className="mt-8 text-center">
+        {user ? (
+          <>
+            <p className="text-lg mb-4">Ready to track your progress?</p>
+            <Button 
+              onClick={() => router.push('/dashboard')}
+              variant="primary"
+              className="px-6 py-3 text-lg font-semibold"
+            >
+              View Your Dashboard
+            </Button>
+          </>
+        ) : (
+          <>
+            <p className="text-lg mb-4">Ready to dive deeper into your health journey with expert guidance?</p>
+            <Button 
+              onClick={() => {/* Add your booking logic here */}}
+              variant="primary"
+              className="px-6 py-3 text-lg font-semibold"
+            >
+              Book Your Free Health Strategy Session
+            </Button>
+          </>
+        )}
+      </div>
+    </section>
+  );
 
   return (
     <div className="min-h-screen flex flex-col relative overflow-x-hidden">
@@ -397,26 +439,7 @@ export default function ResultsPage() {
             )}
           </section>
 
-          <section className="bg-black/30 rounded-lg p-8 deep-space-border">
-            <h3 className="text-2xl font-semibold mb-6">Your Next Steps</h3>
-            <p className="mb-4">Based on your personalized health analysis, consider these key actions:</p>
-            <ol className="list-decimal list-inside space-y-2 mb-6">
-              <li>Review your section summaries and focus on improving your lowest-scoring areas</li>
-              <li>Implement the specific advice given for your chosen health goals</li>
-              <li>Track your progress using the metrics provided in your body composition analysis</li>
-              <li>Consult with a health professional for personalized guidance on complex health matters</li>
-            </ol>
-            <div className="mt-8 text-center">
-              <p className="text-lg mb-4">Ready to dive deeper into your health journey with expert guidance?</p>
-              <Button 
-                onClick={() => {/* Add your booking logic here */}}
-                variant="primary"
-                className="px-6 py-3 text-lg font-semibold"
-              >
-                Book Your Free Health Strategy Session
-              </Button>
-            </div>
-          </section>
+          <NextStepsSection />
 
           <p className="mt-4 text-sm text-gray-300">
             Remember, these suggestions are based on general guidelines. For a tailored approach to achieving your health goals, consider consulting with a health professional.

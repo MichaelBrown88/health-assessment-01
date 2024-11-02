@@ -2,7 +2,6 @@ import { db } from './firebase'
 import { 
   collection, 
   query, 
-  where, 
   getDocs, 
   orderBy, 
   limit
@@ -26,42 +25,40 @@ export interface DashboardData {
 
 export async function getUserDashboardData(userId: string): Promise<DashboardData> {
   try {
-    // Get user's assessments
-    const assessmentsRef = collection(db, 'assessments')
+    const assessmentsRef = collection(db, 'users', userId, 'assessments');
     const q = query(
       assessmentsRef,
-      where('userId', '==', userId),
-      orderBy('date', 'desc'),
+      orderBy('timestamp', 'desc'),
       limit(10)
-    )
+    );
 
-    const querySnapshot = await getDocs(q)
-    const metrics: HealthMetric[] = []
-    let totalScore = 0
+    const querySnapshot = await getDocs(q);
+    const metrics: HealthMetric[] = [];
+    let totalScore = 0;
 
     querySnapshot.forEach((doc) => {
-      const data = doc.data()
+      const data = doc.data();
       metrics.push({
-        date: data.date.toDate(),
-        score: data.score,
-        bmi: data.healthCalculations.bmi,
-        bodyFat: data.healthCalculations.bodyFat,
-        weight: data.healthCalculations.weight,
-        height: data.healthCalculations.height
-      })
-      totalScore += data.score
-    })
+        date: new Date(data.timestamp),
+        score: data.metrics.overallScore,
+        bmi: data.metrics.bmi,
+        bodyFat: data.metrics.bodyFat,
+        weight: data.metrics.weight,
+        height: data.metrics.height
+      });
+      totalScore += data.metrics.overallScore;
+    });
 
-    const averageScore = metrics.length > 0 ? totalScore / metrics.length : 0
+    const averageScore = metrics.length > 0 ? totalScore / metrics.length : 0;
 
     return {
       recentMetrics: metrics,
       averageScore,
       assessmentCount: metrics.length,
       lastAssessment: metrics[0]
-    }
+    };
   } catch (error) {
-    console.error('Error fetching dashboard data:', error)
-    throw error
+    console.error('Error fetching dashboard data:', error);
+    throw error;
   }
 }

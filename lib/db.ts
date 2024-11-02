@@ -1,64 +1,97 @@
-import { db } from './firebase';
-import { 
-  collection, 
-  doc, 
-  setDoc, 
-  getDocs, 
-  orderBy,
-  query,
-  Timestamp
-} from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { doc, collection, getDocs, query, orderBy, deleteDoc, addDoc, where, limit } from 'firebase/firestore';
 import type { AssessmentResult } from '@/types';
 
-export async function saveAssessmentResult(result: AssessmentResult): Promise<void> {
-  if (!result.userId) throw new Error('User ID is required');
+interface AssessmentData {
+  userId: string;
+  timestamp: number;
+  answers: Record<string, string | number | boolean | string[]>;
+  metrics: {
+    bmi: number | null;
+    weight: number | null;
+    height: number | null;
+    bodyFat: number | null;
+    overallScore: number;
+  };
+  analysis: {
+    exercise: string | null;
+    nutrition: string | null;
+    wellbeing: string | null;
+  };
+  healthCalculations: Record<string, string | number | null>;
+}
+
+export const saveAssessmentResult = async (data: AssessmentData) => {
+  if (!data.userId) return;
+
+  // Sanitize the data before saving
+  const sanitizedData = {
+    ...data,
+    metrics: {
+      ...data.metrics,
+      bmi: data.metrics.bmi || null,
+      weight: data.metrics.weight || null,
+      height: data.metrics.height || null,
+      bodyFat: data.metrics.bodyFat || null,
+      overallScore: data.metrics.overallScore
+    }
+  };
+
+  const userRef = doc(db, 'users', data.userId);
+  const assessmentRef = collection(userRef, 'assessments');
   
-  // Generate a deterministic ID based on timestamp to prevent duplicates
-  const id = new Date(result.timestamp).getTime().toString();
+  // Check for existing assessment within the last minute
+  const lastMinute = new Date(Date.now() - 60000);
+  const q = query(
+    assessmentRef,
+    where('timestamp', '>', lastMinute.getTime()),
+    limit(1)
+  );
   
-  const resultRef = doc(db, 'users', result.userId, 'assessments', id);
+  const querySnapshot = await getDocs(q);
   
+  if (querySnapshot.empty) {
+    await addDoc(assessmentRef, sanitizedData);
+  }
+};
+
+export async function getUserAssessments(userId: string): Promise<AssessmentResult[]> {
   try {
-    await setDoc(resultRef, {
-      ...result,
-      timestamp: Timestamp.fromDate(result.timestamp),
+    const assessmentsRef = collection(db, 'users', userId, 'assessments');
+    const q = query(assessmentsRef, orderBy('timestamp', 'desc'));
+    const snapshot = await getDocs(q);
+    
+    const assessments = snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        userId: data.userId,
+        timestamp: data.timestamp,
+        metrics: data.metrics,
+        answers: data.answers
+      } as AssessmentResult;
     });
+    
+    return assessments;
   } catch (error) {
-    console.error('Error saving assessment:', error);
+    console.error('Error fetching assessments:', error);
     throw error;
   }
 }
 
-export async function getUserAssessments(userId: string): Promise<AssessmentResult[]> {
+export async function clearUserAssessments(userId: string) {
   try {
-    console.log('Fetching assessments for user:', userId);
+    const assessmentsRef = collection(db, 'users', userId, 'assessments');
+    const snapshot = await getDocs(assessmentsRef);
     
-    const q = query(
-      collection(db, 'users', userId, 'assessments'),
-      orderBy('timestamp', 'desc')
+    const deletePromises = snapshot.docs.map(doc => 
+      deleteDoc(doc.ref)
     );
     
-    const snapshot = await getDocs(q);
-    console.log('Found documents:', snapshot.size);
-    
-    const assessments = snapshot.docs.map(doc => {
-      const data = doc.data();
-      console.log('Document data:', data);
-      return {
-        id: doc.id,
-        userId: data.userId,
-        timestamp: data.timestamp.toDate(),
-        answers: data.answers,
-        metrics: data.metrics,
-        analysis: data.analysis,
-        healthCalculations: data.healthCalculations
-      } as AssessmentResult;
-    });
-
-    console.log('Processed assessments:', assessments);
-    return assessments;
+    await Promise.all(deletePromises);
+    console.log('All assessments cleared');
   } catch (error) {
-    console.error('Error fetching assessments:', error);
+    console.error('Error clearing assessments:', error);
     throw error;
   }
 }

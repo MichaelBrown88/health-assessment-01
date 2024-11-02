@@ -21,7 +21,10 @@ import {
 } from "@/components/ui/tooltip";
 
 export interface Assessment {
-  timestamp: Date;
+  timestamp: {
+    seconds: number;
+    nanoseconds: number;
+  } | number | Date;
   metrics: {
     overallScore: number;
     [key: string]: number;
@@ -55,6 +58,37 @@ export const StatCards: React.FC<StatCardsProps> = ({ assessments }) => {
     return changes;
   };
 
+  // Helper function to safely convert any timestamp format to Date
+  const getTimestampDate = (timestamp: Assessment['timestamp']): Date => {
+    if (timestamp instanceof Date) {
+      return timestamp;
+    }
+    if (typeof timestamp === 'number') {
+      return new Date(timestamp);
+    }
+    // Handle Firestore timestamp
+    if (timestamp && 'seconds' in timestamp) {
+      return new Date(timestamp.seconds * 1000);
+    }
+    // Fallback
+    return new Date();
+  };
+
+  const firstAssessmentDate = assessments.length > 0
+    ? format(getTimestampDate(assessments[0].timestamp), 'MMM d, yyyy')
+    : 'No assessments yet';
+
+  const latestAssessment = assessments[assessments.length - 1];
+  const nextAssessmentDate = assessments.length > 0 
+    ? format(
+        addWeeks(
+          getTimestampDate(latestAssessment.timestamp),
+          assessmentInterval
+        ),
+        'MMM d'
+      )
+    : 'Take your first assessment';
+
   return (
     <TooltipProvider>
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
@@ -75,9 +109,7 @@ export const StatCards: React.FC<StatCardsProps> = ({ assessments }) => {
             </Tooltip>
           </div>
           <p className="text-lg font-semibold mt-2">
-            {assessments.length > 0 
-              ? format(new Date(assessments[0].timestamp), 'MMM d, yyyy')
-              : 'No assessments yet'}
+            {firstAssessmentDate}
           </p>
         </div>
 
@@ -99,9 +131,7 @@ export const StatCards: React.FC<StatCardsProps> = ({ assessments }) => {
             </Tooltip>
           </div>
           <p className="text-lg font-semibold mt-2">
-            {assessments.length > 0 
-              ? format(addWeeks(new Date(assessments[assessments.length - 1].timestamp), assessmentInterval), 'MMM d')
-              : 'Take your first assessment'}
+            {nextAssessmentDate}
           </p>
           <select 
             value={assessmentInterval}

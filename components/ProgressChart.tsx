@@ -24,26 +24,24 @@ ChartJS.register(
   Legend
 );
 
-interface AssessmentData {
-  timestamp: Date;
-  answers: {
-    exerciseFrequency?: number;
-    exerciseDuration?: number;
-    exerciseIntensity?: string;
-    recoveryDays?: number;
-    [key: string]: string | number | boolean | string[] | undefined;
-  };
+interface ChartData {
+  timestamp: number;
+  date: Date;
   metrics: {
+    weight: number;
+    height: number;
+    bodyFat: number;
     overallScore: number;
-    bmi?: number;
-    bodyFat?: number;
-    weight?: number;
-    height?: number;
+    exerciseScore: number;
+    wellbeingScore: number;
+    nutritionScore: number;
+    bmi: number;
   };
+  answers: Record<string, string | number>;
 }
 
 interface ProgressChartProps {
-  assessments: AssessmentData[];
+  assessments: ChartData[];
 }
 
 export const ProgressChart: React.FC<ProgressChartProps> = ({ assessments }) => {

@@ -20,6 +20,7 @@ import type { AssessmentResult } from '@/types'
 import { ProgressChart } from '@/components/ProgressChart'
 import { StatCards } from '@/components/StatCards'
 import type { Assessment } from '@/components/StatCards'
+import { clearUserAssessments } from '@/lib/db'
 
 type ActivityLevel = 'sedentary' | 'light' | 'moderate' | 'active' | 'veryActive'
 
@@ -37,59 +38,50 @@ type StressLevel = 'very-high' | 'high' | 'moderate' | 'low';
 export default function DashboardPage() {
   const { user } = useAuth()
   const router = useRouter()
-  const [loading, setLoading] = useState(true)
   const [assessments, setAssessments] = useState<AssessmentResult[]>([])
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    let mounted = true
+    if (!user) {
+      router.push('/welcome')
+      return
+    }
 
-    async function loadData() {
-      if (!user) {
-        router.push('/welcome')
-        return
-      }
-
+    async function loadDashboardData() {
       try {
-        console.log('Loading data for user:', user.uid)
+        if (!user?.uid) return;
         const data = await getUserAssessments(user.uid)
-        if (mounted) {
-          setAssessments(data)
-        }
-      } catch (error) {
-        console.error('Error loading assessments:', error)
-      } finally {
-        if (mounted) {
-          setLoading(false)
-        }
+        console.log('Dashboard data:', data)
+        setAssessments(data)
+      } catch (err) {
+        console.error('Error loading dashboard:', err)
+        setError('Failed to load dashboard data')
       }
     }
 
-    loadData()
-
-    return () => {
-      mounted = false
-    }
+    loadDashboardData()
   }, [user, router])
-
-  useEffect(() => {
-    const fetchLatestData = async () => {
-      if (user) {
-        // Fetch latest assessment data
-        const results = await getUserAssessments(user.uid);
-        setAssessments(results);
-      }
-    };
-
-    fetchLatestData();
-  }, [user]); // Dependency on user ensures it updates when user changes
 
   const latestAssessment = assessments[0]
   const averageScore = assessments.length 
     ? assessments.reduce((acc, curr) => acc + curr.metrics.overallScore, 0) / assessments.length 
     : 0
 
-  if (loading) {
-    return <div className="text-white">Loading...</div>
+  const handleClearData = async () => {
+    if (user && window.confirm('Are you sure you want to clear all your assessment data?')) {
+      try {
+        await clearUserAssessments(user.uid);
+        setAssessments([]);
+      } catch (err) {
+        console.error('Error clearing data:', err);
+      }
+    }
+  };
+
+  if (error) {
+    return <div className="text-red-500 mt-4">
+      {error}
+    </div>
   }
 
   return (
@@ -105,7 +97,13 @@ export default function DashboardPage() {
             
             {/* Progress Chart */}
             {assessments.length > 1 && (
-              <ProgressChart assessments={assessments} />
+              <ProgressChart 
+                assessments={assessments.map(assessment => ({
+                  ...assessment,
+                  date: new Date(assessment.timestamp),
+                  bmi: assessment.metrics.bmi ?? calculateBMI(assessment.metrics.weight, assessment.metrics.height)
+                }))} 
+              />
             )}
             
             {/* Key Metrics Row */}
@@ -180,7 +178,11 @@ export default function DashboardPage() {
                   />
                   <MetricItem 
                     label="Caloric Needs" 
-                    value={`${latestAssessment?.healthCalculations.recommendedCalories || '--'} kcal`} 
+                    value={`${calculateRecommendedCalories(
+                      latestAssessment?.metrics.weight || 0,
+                      latestAssessment?.metrics.height || 0,
+                      latestAssessment?.answers.activityLevel as ActivityLevel
+                    ) || '--'} kcal`} 
                   />
                 </div>
               </Card>
@@ -224,8 +226,8 @@ export default function DashboardPage() {
                       <tr key={index} className="border-b border-gray-800">
                         <td className="py-3">{formatDate(assessment.timestamp)}</td>
                         <td className="py-3">{assessment.metrics.overallScore.toFixed(1)}</td>
-                        <td className="py-3">{assessment.metrics.bmi.toFixed(1)}</td>
-                        <td className="py-3">{assessment.metrics.weight} kg</td>
+                        <td className="py-3">{assessment.metrics.bmi?.toFixed(1) ?? 'N/A'}</td>
+                        <td className="py-3">{assessment.metrics.weight ? `${assessment.metrics.weight} kg` : 'N/A'}</td>
                         <td className="py-3">{formatActivityLevel(assessment.answers.activityLevel as ActivityLevel)}</td>
                       </tr>
                     ))}
@@ -236,10 +238,15 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+      <button
+        onClick={handleClearData}
+        className="mt-4 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+      >
+        Clear All Data
+      </button>
     </div>
   )
 }
-
 // Helper Components
 function MetricItem({ label, value }: { label: string, value: string }) {
   return (
@@ -267,8 +274,8 @@ function calculateProgress(assessments: AssessmentResult[]): string {
   return progress.toFixed(1)
 }
 
-function formatDate(date: Date): string {
-  return new Date(date).toLocaleDateString()
+function formatDate(date: number | Date): string {
+  return new Date(date).toLocaleDateString();
 }
 
 // Format helper functions for various metrics
@@ -359,3 +366,31 @@ function formatRecovery(recovery: string | null): string {
   };
   return mapping[recovery as keyof typeof mapping] || recovery;
 }
+
+function calculateBMI(weight: number, height: number): number {
+  const heightInMeters = height / 100;
+  return Number((weight / (heightInMeters * heightInMeters)).toFixed(1));
+}
+
+function calculateRecommendedCalories(
+  weight: number,
+  height: number,
+  activityLevel: ActivityLevel | null
+): number {
+  if (!weight || !height || !activityLevel) return 0;
+  
+  // Basic BMR calculation using Mifflin-St Jeor Equation
+  const bmr = 10 * weight + 6.25 * height - 5 * 30; // Assuming age 30 for now
+  
+  // Activity multipliers
+  const multipliers: Record<ActivityLevel, number> = {
+    sedentary: 1.2,
+    light: 1.375,
+    moderate: 1.55,
+    active: 1.725,
+    veryActive: 1.9
+  };
+  
+  return Math.round(bmr * multipliers[activityLevel]);
+}
+
