@@ -6,6 +6,7 @@ import {
   orderBy, 
   limit
 } from 'firebase/firestore'
+import type { Achievement, MetricTrends } from '@/app/types/dashboard';
 
 export interface HealthMetric {
   date: Date;
@@ -21,6 +22,27 @@ export interface DashboardData {
   averageScore: number;
   assessmentCount: number;
   lastAssessment?: HealthMetric;
+}
+
+export interface EnhancedDashboardData extends DashboardData {
+  engagement: {
+    streak: number;
+    completionRate: number;
+    achievements: Achievement[];
+  };
+  trends: {
+    shortTerm: MetricTrends; // 7-day
+    longTerm: MetricTrends;  // 30-day
+  };
+  goals: {
+    current: string[];
+    progress: Record<string, number>;
+  };
+  insights: {
+    improvements: string[];
+    concerns: string[];
+    recommendations: string[];
+  };
 }
 
 export async function getUserDashboardData(userId: string): Promise<DashboardData> {

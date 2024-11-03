@@ -19,18 +19,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-
-export interface Assessment {
-  timestamp: {
-    seconds: number;
-    nanoseconds: number;
-  } | number | Date;
-  metrics: {
-    overallScore: number;
-    [key: string]: number;
-  };
-  answers: Record<string, string | number | boolean | string[]>;
-}
+import type { Assessment } from "@/types/assessment"
 
 interface StatCardsProps {
   assessments: Assessment[];

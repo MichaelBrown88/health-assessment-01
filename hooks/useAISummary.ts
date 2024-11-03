@@ -1,15 +1,15 @@
 import { useState, useEffect, useRef } from 'react';
 
 // Define an interface for the summary
-interface FeedbackItem {
-  color: string;
+export interface FeedbackItem {
   item: string;
   score: number;
   feedback: string;
-  recommendations: string;
+  recommendations: string[];
+  color: string;
 }
 
-interface SummarySection {
+export interface SummarySection {
   title: string;
   score: number;
   feedbackItems: FeedbackItem[];

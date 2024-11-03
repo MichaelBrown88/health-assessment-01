@@ -82,7 +82,26 @@ export default function WelcomePage() {
           Discover your personalized path to peak wellness with our cutting-edge health assessment.
         </p>
         <div className="flex justify-center space-x-4">
-          {!user ? (
+          {user ? (
+            <div className="flex space-x-4">
+              <Button 
+                onClick={() => router.push('/questions')} 
+                size="lg" 
+                variant="primary"
+                className="welcome-button"
+              >
+                Take New Assessment
+              </Button>
+              <Button 
+                onClick={() => router.push('/dashboard')} 
+                size="lg" 
+                variant="dark"
+                className="welcome-button"
+              >
+                View Dashboard
+              </Button>
+            </div>
+          ) : (
             <>
               <Button 
                 onClick={() => router.push('/questions')} 
@@ -101,15 +120,6 @@ export default function WelcomePage() {
                 Login / Sign Up
               </Button>
             </>
-          ) : (
-            <Button 
-              onClick={() => router.push('/questions')} 
-              size="lg" 
-              variant="primary"
-              className="welcome-button"
-            >
-              Start Assessment
-            </Button>
           )}
         </div>
 

@@ -1,28 +1,26 @@
 'use client'
 
-import React, { useState, useCallback, useReducer } from "react"
+import { useReducer, useState, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
+import { useAuth } from '@/contexts/AuthContext'
+import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
-import { questions, AnswerType } from '@/data/questions'
-import { ContactForm } from '@/components/ContactForm'
 import { SpaceTheme } from '@/components/SpaceTheme'
 import QuestionRenderer from '@/components/QuestionRenderer'
-import { useRouter } from 'next/navigation'
-import { cn } from "@/lib/utils"; // Make sure you have this utility function
-import { useAuth } from '@/lib/auth'
+import { ContactForm } from '@/components/ContactForm'
+import { questions } from '@/data/questions'
+import type { AnswerType } from '@/data/questions'
+import { cn } from '@/lib/utils'
 
-// Reducer for answers state
-type AnswerAction = 
-  | { type: 'SET_ANSWER', payload: { id: string, value: string | number | string[] } }
-  | { type: 'RESET_ANSWERS' }
-
-const answerReducer = (state: AnswerType, action: AnswerAction): AnswerType => {
+// Add answer reducer
+const answerReducer = (state: AnswerType, action: { type: string; payload: { id: string; value: string | number | string[] } }) => {
   switch (action.type) {
     case 'SET_ANSWER':
-      return { ...state, [action.payload.id]: action.payload.value }
-    case 'RESET_ANSWERS':
-      return {}
+      return {
+        ...state,
+        [action.payload.id]: action.payload.value
+      }
     default:
       return state
   }
@@ -80,20 +78,25 @@ export default function HealthAssessmentPage() {
 
   const handleContactInfoSubmit = useCallback((name: string, email: string) => {
     if (name && email) {
-      console.log("User Contact Info:", { name, email, answers })
-      const encodedAnswers = encodeURIComponent(JSON.stringify(answers))
-      router.push(`/results?answers=${encodedAnswers}`) // Updated path
+      const validAnswers = Object.fromEntries(
+        Object.entries(answers).filter(([, value]) => value !== undefined && value !== null)
+      );
+      
+      console.log("Submitting answers:", validAnswers);
+      
+      const encodedAnswers = encodeURIComponent(JSON.stringify(validAnswers));
+      router.push(`/results?answers=${encodedAnswers}`);
     } else {
-      setSubmitError("Please fill in both name and email.")
+      setSubmitError("Please fill in both name and email.");
     }
-  }, [answers, router])
+  }, [answers, router]);
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center text-center relative overflow-hidden">
       <SpaceTheme />
       <div className="relative z-20 w-full max-w-4xl mx-auto px-4 flex flex-col items-center justify-center min-h-screen py-20">
         <Card className="card-custom border-none bg-opacity-50 backdrop-blur-md p-6 w-full my-auto">
-          <CardContent className="space-y-6">
+          <div className="space-y-6">
             {!showContactForm ? (
               <div className="space-y-6">
                 <div className="mb-4">
@@ -125,26 +128,24 @@ export default function HealthAssessmentPage() {
                 <ContactForm onSubmit={handleContactInfoSubmit} error={submitError} />
               </div>
             )}
-          </CardContent>
-          <CardFooter>
-            <div className="w-full flex justify-between items-center mt-4">
-              {currentQuestion > 0 && !showContactForm && (
-                <Button variant="dark" onClick={handlePrevious} className="px-4 py-2 text-sm">
-                  Previous
-                </Button>
-              )}
-              {currentQuestion >= 0 && !showContactForm && (
-                <Button 
-                  onClick={handleNext} 
-                  disabled={!answers[questions[currentQuestion].id] && questions[currentQuestion].id !== 'bodyFat'}
-                  variant="primary"
-                  className="px-4 py-2 text-sm"
-                >
-                  {currentQuestion === questions.length - 1 ? "Get Your Analysis" : "Next"}
-                </Button>
-              )}
-            </div>
-          </CardFooter>
+          </div>
+          <div className="flex justify-between mt-6">
+            {currentQuestion > 0 && !showContactForm && (
+              <Button variant="dark" onClick={handlePrevious} className="px-4 py-2 text-sm">
+                Previous
+              </Button>
+            )}
+            {currentQuestion >= 0 && !showContactForm && (
+              <Button 
+                onClick={handleNext} 
+                disabled={!answers[questions[currentQuestion].id] && questions[currentQuestion].id !== 'bodyFat'}
+                variant="primary"
+                className="px-4 py-2 text-sm"
+              >
+                {currentQuestion === questions.length - 1 ? "Get Your Analysis" : "Next"}
+              </Button>
+            )}
+          </div>
         </Card>
       </div>
     </div>

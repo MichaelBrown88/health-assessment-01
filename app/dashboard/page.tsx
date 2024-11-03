@@ -2,395 +2,271 @@
 
 import { useEffect, useState } from 'react'
 import { SpaceTheme } from '@/components/SpaceTheme'
-import { Card } from '@/components/ui/card'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 import { getUserAssessments } from '@/lib/db'
-import { 
-  Activity, 
-  Brain, 
-  Utensils, 
-  Dumbbell,
-  TrendingUp,
-  Scale,
-  Timer
-} from 'lucide-react'
-import { Progress } from "@/components/ui/progress"
-import type { AssessmentResult } from '@/types'
+import type { Assessment, ChartData } from '@/types/assessment'
 import { ProgressChart } from '@/components/ProgressChart'
 import { StatCards } from '@/components/StatCards'
-import type { Assessment } from '@/components/StatCards'
-import { clearUserAssessments } from '@/lib/db'
+import { RecentAchievements } from '../components/dashboard/RecentAchievements'
+import { 
+  Trophy, 
+  Award, 
+  ArrowUp as ArrowUpIcon, 
+  ArrowDown as ArrowDownIcon, 
+  Minus as MinusIcon,
+  Calendar as CalendarIcon,
+  Clock as ClockIcon
+} from 'lucide-react'
+import { calculateStreak, calculateCompletionRate, compareMetrics } from '@/lib/metrics'
+import { Card } from "@/components/ui/card"
+import { PillarOverview } from "../components/dashboard/PillarOverview"
+import { AssessmentHistory } from '../components/dashboard/AssessmentHistory'
 
-type ActivityLevel = 'sedentary' | 'light' | 'moderate' | 'active' | 'veryActive'
-
-type ExerciseIntensity = 'light' | 'moderate' | 'vigorous' | 'very-intense'
-
-type Recovery = 'poor' | 'fair' | 'good' | 'excellent'
-
-type Diet = 'unhealthy' | 'average' | 'healthy' | 'very-healthy'
-
-type MealFrequency = '1-2' | '3-4' | '5-6' | 'more-than-6'
-
-type SleepQuality = 'poor' | 'fair' | 'good' | 'excellent';
-type StressLevel = 'very-high' | 'high' | 'moderate' | 'low';
+// Helper function to convert timestamp to number
+const getTimestampNumber = (timestamp: number | Date | { seconds: number; nanoseconds: number }): number => {
+  if (timestamp instanceof Date) {
+    return timestamp.getTime();
+  }
+  if (typeof timestamp === 'number') {
+    return timestamp;
+  }
+  return timestamp.seconds * 1000;
+};
 
 export default function DashboardPage() {
-  const { user } = useAuth()
-  const router = useRouter()
-  const [assessments, setAssessments] = useState<AssessmentResult[]>([])
-  const [error, setError] = useState<string | null>(null)
+  const [assessments, setAssessments] = useState<Assessment[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
+  const router = useRouter();
+
+  // Add these calculations
+  const firstAssessmentDate = assessments.length > 0 
+    ? new Date(getTimestampNumber(assessments[0].timestamp)).toLocaleDateString()
+    : 'No assessments yet';
+
+  const nextAssessmentDate = assessments.length > 0 
+    ? new Date(getTimestampNumber(assessments[assessments.length - 1].timestamp) + (7 * 24 * 60 * 60 * 1000)).toLocaleDateString()
+    : 'N/A';
+
+  // Add this to calculate latest assessment
+  const latestAssessment = assessments.length > 0 
+    ? assessments.reduce((latest, current) => {
+        const currentDate = getTimestampNumber(current.timestamp);
+        const latestDate = getTimestampNumber(latest.timestamp);
+        return currentDate > latestDate ? current : latest;
+      }, assessments[0])
+    : null;
 
   useEffect(() => {
-    if (!user) {
-      router.push('/welcome')
-      return
-    }
-
-    async function loadDashboardData() {
-      try {
-        if (!user?.uid) return;
-        const data = await getUserAssessments(user.uid)
-        console.log('Dashboard data:', data)
-        setAssessments(data)
-      } catch (err) {
-        console.error('Error loading dashboard:', err)
-        setError('Failed to load dashboard data')
+    const fetchAssessments = async () => {
+      if (!user) {
+        router.push('/login');
+        return;
       }
-    }
 
-    loadDashboardData()
-  }, [user, router])
-
-  const latestAssessment = assessments[0]
-  const averageScore = assessments.length 
-    ? assessments.reduce((acc, curr) => acc + curr.metrics.overallScore, 0) / assessments.length 
-    : 0
-
-  const handleClearData = async () => {
-    if (user && window.confirm('Are you sure you want to clear all your assessment data?')) {
       try {
-        await clearUserAssessments(user.uid);
-        setAssessments([]);
-      } catch (err) {
-        console.error('Error clearing data:', err);
+        const data = await getUserAssessments(user.uid);
+        const transformedData: Assessment[] = data.map(assessment => ({
+          ...assessment,
+          timestamp: getTimestampNumber(assessment.timestamp),
+          metrics: {
+            ...assessment.metrics,
+            exerciseScore: assessment.metrics.exerciseScore,
+            nutritionScore: assessment.metrics.nutritionScore,
+            wellbeingScore: assessment.metrics.wellbeingScore,
+            overallScore: assessment.metrics.overallScore,
+            weight: assessment.metrics.weight,
+            height: assessment.metrics.height,
+            bodyFat: assessment.metrics.bodyFat,
+            bmi: assessment.metrics.bmi,
+          },
+          answers: {
+            activityLevel: String(assessment.answers.activityLevel || ''),
+            exerciseIntensity: String(assessment.answers.exerciseIntensity || ''),
+            exerciseDuration: String(assessment.answers.exerciseDuration || ''),
+            diet: String(assessment.answers.diet || ''),
+            lastMeal: String(assessment.answers.lastMeal || ''),
+            mealFrequency: String(assessment.answers.mealFrequency || ''),
+            sleepDuration: String(assessment.answers.sleepDuration || ''),
+            sleepQuality: String(assessment.answers.sleepQuality || ''),
+            recovery: String(assessment.answers.recovery || ''),
+            stress: String(assessment.answers.stress || ''),
+            mentalHealth: String(assessment.answers.mentalHealth || ''),
+            socializing: String(assessment.answers.socializing || ''),
+          }
+        }));
+
+        setAssessments(transformedData);
+      } catch (error) {
+        console.error('Error fetching assessments:', error);
+        setError('Failed to fetch assessments');
       }
-    }
-  };
+    };
+
+    fetchAssessments();
+  }, [user, router]);
+
+  // When passing data to ProgressChart, transform it to match ChartData
+  const chartData: ChartData[] = assessments.map(assessment => ({
+    ...assessment,
+    date: new Date(getTimestampNumber(assessment.timestamp)),
+    timestamp: getTimestampNumber(assessment.timestamp),
+    answers: Object.fromEntries(
+      Object.entries(assessment.answers).map(([key, value]) => [key, String(value)])
+    )
+  }));
 
   if (error) {
-    return <div className="text-red-500 mt-4">
-      {error}
-    </div>
+    return <div className="text-red-500 mt-4">{error}</div>;
   }
 
   return (
     <div className="min-h-screen relative">
       <SpaceTheme />
-      <div className="relative z-10 w-full px-4 py-8">
-        <div className="max-w-[2000px] mx-auto"> {/* Increased max width */}
-          <div className="space-y-6">
-            <h1>Your Health Dashboard</h1>
+      <div className="relative z-10 w-full px-6 py-12 mx-auto">
+        <div className="max-w-7xl mx-auto">
+          <div className="space-y-8">
+            <h1 className="text-3xl font-bold text-white mb-8 px-4">Your Health Dashboard</h1>
             
-            {/* Stat Cards */}
-            <StatCards assessments={assessments as unknown as Assessment[]} />
+            {/* Assessment Dates */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 px-4">
+              <Card className="bg-black/30 backdrop-blur-sm border-gray-800 p-6">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-sm font-medium text-gray-400">First Assessment</h3>
+                  <CalendarIcon className="w-4 h-4 text-blue-400" />
+                </div>
+                <p className="text-lg font-semibold text-white">{firstAssessmentDate}</p>
+              </Card>
+              
+              <Card className="bg-black/30 backdrop-blur-sm border-gray-800 p-6">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-sm font-medium text-gray-400">Next Assessment</h3>
+                  <ClockIcon className="w-4 h-4 text-purple-400" />
+                </div>
+                <p className="text-lg font-semibold text-white">{nextAssessmentDate}</p>
+              </Card>
+            </div>
+            
+            {/* Health Score Card */}
+            {latestAssessment && (
+              <div className="px-4">
+                <Card className="bg-black/30 backdrop-blur-sm border-gray-800">
+                  <div className="p-6 text-center">
+                    <h2 className="text-2xl font-semibold mb-4 text-white">Overall Health Score</h2>
+                    <div className="text-5xl font-bold mb-4 text-white">
+                      {latestAssessment.metrics.overallScore.toFixed(1)}
+                    </div>
+                    <div className="h-3 bg-gray-700 rounded-full overflow-hidden">
+                      <div 
+                        className="h-full deep-space-gradient"
+                        style={{ width: `${latestAssessment.metrics.overallScore}%` }}
+                      />
+                    </div>
+                  </div>
+                </Card>
+              </div>
+            )}
+            
+            {latestAssessment && (
+              <div className="px-4">
+                <PillarOverview assessment={latestAssessment} />
+              </div>
+            )}
+            
+            {/* StatCards Section */}
+            <div className="px-4">
+              <StatCards assessments={assessments} />
+            </div>
+            
+            {/* Engagement Metrics Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 px-4">
+              <Card className="bg-black/30 backdrop-blur-sm border-gray-800 p-6">
+                <div className="text-center">
+                  <Trophy className="h-8 w-8 mb-2 mx-auto text-yellow-400" />
+                  <p className="text-2xl font-bold text-white">{calculateStreak(assessments)}</p>
+                  <p className="text-sm text-gray-400">Day Streak</p>
+                </div>
+              </Card>
+              
+              <Card className="bg-black/30 backdrop-blur-sm border-gray-800 p-6">
+                <div className="text-center">
+                  <Award className="h-8 w-8 mb-2 mx-auto text-purple-400" />
+                  <p className="text-2xl font-bold text-white">{calculateCompletionRate(assessments)}%</p>
+                  <p className="text-sm text-gray-400">Completion Rate</p>
+                </div>
+              </Card>
+            </div>
             
             {/* Progress Chart */}
             {assessments.length > 1 && (
-              <ProgressChart 
-                assessments={assessments.map(assessment => ({
-                  ...assessment,
-                  date: new Date(assessment.timestamp),
-                  bmi: assessment.metrics.bmi ?? calculateBMI(assessment.metrics.weight, assessment.metrics.height)
-                }))} 
-              />
+              <div className="px-4">
+                <Card className="bg-black/30 backdrop-blur-sm border-gray-800 p-6">
+                  <h2 className="text-xl font-semibold text-white mb-6">Your Progress</h2>
+                  <div className="h-[400px]">
+                    <ProgressChart 
+                      assessments={chartData} 
+                    />
+                  </div>
+                </Card>
+              </div>
             )}
             
-            {/* Key Metrics Row */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-              <Card className="p-6 bg-black/50 backdrop-blur-sm border-gray-800">
-                <Activity className="h-8 w-8 mb-4 text-blue-400" />
-                <h2 className="text-xl font-semibold mb-2 text-white">Overall Health Score</h2>
-                <p className="text-4xl font-bold text-white">{averageScore.toFixed(1)}</p>
-                <Progress value={averageScore} className="mt-4" />
-              </Card>
-
-              <Card className="p-6 bg-black/50 backdrop-blur-sm border-gray-800">
-                <Scale className="h-8 w-8 mb-4 text-purple-400" />
-                <h2 className="text-xl font-semibold mb-2 text-white">Current BMI</h2>
-                <p className="text-4xl font-bold text-white">
-                  {latestAssessment?.metrics.bmi.toFixed(1) || '--'}
-                </p>
-                <p className="text-sm text-gray-400 mt-2">
-                  {getBMICategory(latestAssessment?.metrics.bmi)}
-                </p>
-              </Card>
-
-              <Card className="p-6 bg-black/50 backdrop-blur-sm border-gray-800">
-                <Timer className="h-8 w-8 mb-4 text-green-400" />
-                <h2 className="text-xl font-semibold mb-2 text-white">Assessments</h2>
-                <p className="text-4xl font-bold text-white">{assessments.length}</p>
-                <p className="text-sm text-gray-400 mt-2">Total Completed</p>
-              </Card>
-
-              <Card className="p-6 bg-black/50 backdrop-blur-sm border-gray-800">
-                <TrendingUp className="h-8 w-8 mb-4 text-yellow-400" />
-                <h2 className="text-xl font-semibold mb-2 text-white">Progress</h2>
-                <p className="text-4xl font-bold text-white">
-                  {calculateProgress(assessments)}%
-                </p>
-                <p className="text-sm text-gray-400 mt-2">Since First Assessment</p>
+            {/* Recent Achievements */}
+            <div className="px-4">
+              <RecentAchievements assessments={assessments} />
+            </div>
+            
+            {/* Metric Changes */}
+            <div className="px-4">
+              <Card className="bg-black/30 backdrop-blur-sm border-gray-800 p-6">
+                <h2 className="text-xl font-semibold text-white mb-4">Metric Changes</h2>
+                {assessments.length >= 2 && (
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="text-center p-4 bg-black/20 rounded-lg">
+                      <ArrowUpIcon className="h-6 w-6 text-green-500 mx-auto mb-2" />
+                      <p className="text-2xl font-bold text-green-500">
+                        {compareMetrics(
+                          assessments[assessments.length - 1],
+                          assessments[assessments.length - 2]
+                        ).improved}
+                      </p>
+                      <p className="text-sm text-gray-400">Improved</p>
+                    </div>
+                    <div className="text-center p-4 bg-black/20 rounded-lg">
+                      <MinusIcon className="h-6 w-6 text-yellow-500 mx-auto mb-2" />
+                      <p className="text-2xl font-bold text-yellow-500">
+                        {compareMetrics(
+                          assessments[assessments.length - 1],
+                          assessments[assessments.length - 2]
+                        ).unchanged}
+                      </p>
+                      <p className="text-sm text-gray-400">Unchanged</p>
+                    </div>
+                    <div className="text-center p-4 bg-black/20 rounded-lg">
+                      <ArrowDownIcon className="h-6 w-6 text-red-500 mx-auto mb-2" />
+                      <p className="text-2xl font-bold text-red-500">
+                        {compareMetrics(
+                          assessments[assessments.length - 1],
+                          assessments[assessments.length - 2]
+                        ).declined}
+                      </p>
+                      <p className="text-sm text-gray-400">Declined</p>
+                    </div>
+                  </div>
+                )}
               </Card>
             </div>
-
-            {/* Health Categories Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
-              <Card className="p-6 bg-black/50 backdrop-blur-sm border-gray-800">
-                <Dumbbell className="h-8 w-8 mb-4 text-red-400" />
-                <h2 className="text-xl font-semibold mb-2 text-white">Exercise</h2>
-                <div className="space-y-4">
-                  <MetricItem 
-                    label="Activity Level" 
-                    value={formatActivityLevel(latestAssessment?.answers.activityLevel as ActivityLevel)} 
-                  />
-                  <MetricItem 
-                    label="Exercise Intensity" 
-                    value={formatExerciseIntensity(latestAssessment?.answers.exerciseIntensity as ExerciseIntensity)} 
-                  />
-                  <MetricItem 
-                    label="Recovery Quality" 
-                    value={formatRecovery(latestAssessment?.answers.recovery as Recovery)} 
-                  />
-                </div>
-              </Card>
-
-              <Card className="p-6 bg-black/50 backdrop-blur-sm border-gray-800">
-                <Utensils className="h-8 w-8 mb-4 text-green-400" />
-                <h2 className="text-xl font-semibold mb-2 text-white">Nutrition</h2>
-                <div className="space-y-4">
-                  <MetricItem 
-                    label="Diet Quality" 
-                    value={formatDiet(latestAssessment?.answers.diet as Diet)} 
-                  />
-                  <MetricItem 
-                    label="Meal Frequency" 
-                    value={formatMealFrequency(latestAssessment?.answers.mealFrequency as MealFrequency)} 
-                  />
-                  <MetricItem 
-                    label="Caloric Needs" 
-                    value={`${calculateRecommendedCalories(
-                      latestAssessment?.metrics.weight || 0,
-                      latestAssessment?.metrics.height || 0,
-                      latestAssessment?.answers.activityLevel as ActivityLevel
-                    ) || '--'} kcal`} 
-                  />
-                </div>
-              </Card>
-
-              <Card className="p-6 bg-black/50 backdrop-blur-sm border-gray-800">
-                <Brain className="h-8 w-8 mb-4 text-blue-400" />
-                <h2 className="text-xl font-semibold mb-2 text-white">Wellbeing</h2>
-                <div className="space-y-4">
-                  <MetricItem 
-                    label="Sleep Quality" 
-                    value={formatSleepQuality(latestAssessment?.answers.sleepQuality as SleepQuality)} 
-                  />
-                  <MetricItem 
-                    label="Stress Level" 
-                    value={formatStress(latestAssessment?.answers.stress as StressLevel)} 
-                  />
-                  <MetricItem 
-                    label="Mental Health" 
-                    value={formatMentalHealth(latestAssessment?.answers.mentalHealth as 'often' | 'sometimes' | 'rarely' | 'never')} 
-                  />
-                </div>
-              </Card>
-            </div>
-
-            {/* Recent Assessments Table */}
-            <Card className="p-6 bg-black/50 backdrop-blur-sm border-gray-800">
-              <h2 className="text-xl font-semibold mb-4 text-white">Recent Assessments</h2>
-              <div className="overflow-x-auto">
-                <table className="w-full text-white">
-                  <thead>
-                    <tr className="border-b border-gray-800">
-                      <th className="text-left py-3">Date</th>
-                      <th className="text-left py-3">Score</th>
-                      <th className="text-left py-3">BMI</th>
-                      <th className="text-left py-3">Weight</th>
-                      <th className="text-left py-3">Activity Level</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {assessments.slice(0, 5).map((assessment, index) => (
-                      <tr key={index} className="border-b border-gray-800">
-                        <td className="py-3">{formatDate(assessment.timestamp)}</td>
-                        <td className="py-3">{assessment.metrics.overallScore.toFixed(1)}</td>
-                        <td className="py-3">{assessment.metrics.bmi?.toFixed(1) ?? 'N/A'}</td>
-                        <td className="py-3">{assessment.metrics.weight ? `${assessment.metrics.weight} kg` : 'N/A'}</td>
-                        <td className="py-3">{formatActivityLevel(assessment.answers.activityLevel as ActivityLevel)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+            
+            {assessments.length > 0 && (
+              <div className="px-4">
+                <AssessmentHistory assessments={assessments} />
               </div>
-            </Card>
+            )}
           </div>
         </div>
       </div>
-      <button
-        onClick={handleClearData}
-        className="mt-4 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
-      >
-        Clear All Data
-      </button>
     </div>
-  )
-}
-// Helper Components
-function MetricItem({ label, value }: { label: string, value: string }) {
-  return (
-    <div className="flex justify-between items-center">
-      <span className="text-gray-400">{label}</span>
-      <span className="text-white font-medium">{value}</span>
-    </div>
-  )
-}
-
-// Helper Functions
-function getBMICategory(bmi: number | undefined): string {
-  if (!bmi) return '--'
-  if (bmi < 18.5) return 'Underweight'
-  if (bmi < 25) return 'Normal weight'
-  if (bmi < 30) return 'Overweight'
-  return 'Obese'
-}
-
-function calculateProgress(assessments: AssessmentResult[]): string {
-  if (assessments.length < 2) return '0'
-  const first = assessments[assessments.length - 1].metrics.overallScore
-  const latest = assessments[0].metrics.overallScore
-  const progress = ((latest - first) / first) * 100
-  return progress.toFixed(1)
-}
-
-function formatDate(date: number | Date): string {
-  return new Date(date).toLocaleDateString();
-}
-
-// Format helper functions for various metrics
-function formatActivityLevel(level: ActivityLevel | null): string {
-  if (!level) return '--';
-  const mapping: Record<ActivityLevel, string> = {
-    sedentary: 'Sedentary',
-    light: 'Light',
-    moderate: 'Moderate',
-    active: 'Active',
-    veryActive: 'Very Active'
-  };
-  return mapping[level];
-}
-
-function formatExerciseIntensity(intensity: ExerciseIntensity | null): string {
-  if (!intensity) return '--';
-  const mapping: Record<ExerciseIntensity, string> = {
-    light: 'Light',
-    moderate: 'Moderate',
-    vigorous: 'Vigorous',
-    'very-intense': 'Very Intense'
-  };
-  return mapping[intensity];
-}
-
-function formatDiet(diet: Diet | null): string {
-  if (!diet) return '--';
-  const mapping: Record<Diet, string> = {
-    unhealthy: 'Unhealthy',
-    average: 'Average',
-    healthy: 'Healthy',
-    'very-healthy': 'Very Healthy'
-  };
-  return mapping[diet];
-}
-
-function formatMealFrequency(frequency: MealFrequency | undefined): string {
-  if (!frequency) return '--';
-  const mapping: { [key: string]: string } = {
-    '1-2': '1-2 meals',
-    '3-4': '3-4 meals',
-    '5-6': '5-6 meals',
-    'more-than-6': '6+ meals'
-  }
-  return mapping[frequency]
-}
-
-function formatSleepQuality(quality: SleepQuality | undefined): string {
-  const mapping: Record<SleepQuality, string> = {
-    poor: 'Poor',
-    fair: 'Fair',
-    good: 'Good',
-    excellent: 'Excellent'
-  };
-  return quality ? mapping[quality] : '--';
-}
-
-function formatStress(stress: StressLevel | undefined): string {
-  if (!stress) return '--';
-  const mapping: Record<StressLevel, string> = {
-    'very-high': 'Very High',
-    high: 'High',
-    moderate: 'Moderate',
-    low: 'Low'
-  };
-  return mapping[stress];
-}
-
-function formatMentalHealth(health: 'often' | 'sometimes' | 'rarely' | 'never' | undefined): string {
-  if (!health) return '--';
-  const mapping: { [key: string]: string } = {
-    often: 'Often Stressed',
-    sometimes: 'Sometimes Stressed',
-    rarely: 'Rarely Stressed',
-    never: 'Never Stressed'
-  }
-  return mapping[health];
-}
-
-function formatRecovery(recovery: string | null): string {
-  if (!recovery) return '--';
-  const mapping: Record<string, string> = {
-    poor: 'Poor',
-    fair: 'Fair',
-    good: 'Good',
-    excellent: 'Excellent'
-  };
-  return mapping[recovery as keyof typeof mapping] || recovery;
-}
-
-function calculateBMI(weight: number, height: number): number {
-  const heightInMeters = height / 100;
-  return Number((weight / (heightInMeters * heightInMeters)).toFixed(1));
-}
-
-function calculateRecommendedCalories(
-  weight: number,
-  height: number,
-  activityLevel: ActivityLevel | null
-): number {
-  if (!weight || !height || !activityLevel) return 0;
-  
-  // Basic BMR calculation using Mifflin-St Jeor Equation
-  const bmr = 10 * weight + 6.25 * height - 5 * 30; // Assuming age 30 for now
-  
-  // Activity multipliers
-  const multipliers: Record<ActivityLevel, number> = {
-    sedentary: 1.2,
-    light: 1.375,
-    moderate: 1.55,
-    active: 1.725,
-    veryActive: 1.9
-  };
-  
-  return Math.round(bmr * multipliers[activityLevel]);
+  );
 }
 

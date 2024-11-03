@@ -1,5 +1,5 @@
 import { db } from '@/lib/firebase';
-import { doc, collection, getDocs, query, orderBy, deleteDoc, addDoc, where, limit } from 'firebase/firestore';
+import { doc, collection, getDocs, query, orderBy, deleteDoc, addDoc, where, limit, setDoc } from 'firebase/firestore';
 import type { AssessmentResult } from '@/types';
 
 interface AssessmentData {
@@ -21,38 +21,23 @@ interface AssessmentData {
   healthCalculations: Record<string, string | number | null>;
 }
 
-export const saveAssessmentResult = async (data: AssessmentData) => {
-  if (!data.userId) return;
-
-  // Sanitize the data before saving
-  const sanitizedData = {
+export const saveAssessmentResult = async (userId: string, data: {
+  answers: any;
+  healthCalculations: any;
+  score: number;
+  summary: any;
+  timestamp: number;
+}) => {
+  const assessmentRef = doc(db, 'users', userId, 'assessments', data.timestamp.toString());
+  await setDoc(assessmentRef, {
     ...data,
-    metrics: {
-      ...data.metrics,
-      bmi: data.metrics.bmi || null,
-      weight: data.metrics.weight || null,
-      height: data.metrics.height || null,
-      bodyFat: data.metrics.bodyFat || null,
-      overallScore: data.metrics.overallScore
+    resultSnapshot: {
+      answers: data.answers,
+      healthCalculations: data.healthCalculations,
+      score: data.score,
+      summary: data.summary
     }
-  };
-
-  const userRef = doc(db, 'users', data.userId);
-  const assessmentRef = collection(userRef, 'assessments');
-  
-  // Check for existing assessment within the last minute
-  const lastMinute = new Date(Date.now() - 60000);
-  const q = query(
-    assessmentRef,
-    where('timestamp', '>', lastMinute.getTime()),
-    limit(1)
-  );
-  
-  const querySnapshot = await getDocs(q);
-  
-  if (querySnapshot.empty) {
-    await addDoc(assessmentRef, sanitizedData);
-  }
+  });
 };
 
 export async function getUserAssessments(userId: string): Promise<AssessmentResult[]> {

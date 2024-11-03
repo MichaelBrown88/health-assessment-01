@@ -1,5 +1,5 @@
 import React from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { InfoIcon } from "lucide-react"
@@ -27,10 +27,10 @@ export const BodyCompositionCard: React.FC<BodyCompositionCardProps> = ({ health
   
   return (
     <Card className={cn("bg-black/30 rounded-lg deep-space-border", "border-0")}>
-      <CardHeader>
-        <CardTitle>Body Composition</CardTitle>
-      </CardHeader>
-      <CardContent>
+      <div className="p-6">
+        <h3 className="text-lg font-semibold leading-none tracking-tight">Body Composition</h3>
+      </div>
+      <div className="p-6 pt-0">
         <dl className="space-y-2">
           {[
             { label: "BMI", value: `${bmi?.toFixed(1) ?? 'N/A'} (${bmiCategory ?? 'N/A'})`, tooltip: "Body Mass Index (BMI) is a measure of body fat based on height and weight." },
@@ -58,7 +58,7 @@ export const BodyCompositionCard: React.FC<BodyCompositionCardProps> = ({ health
           ))}
         </dl>
         {footer && <p className="text-sm text-gray-400 mt-4">{footer}</p>}
-      </CardContent>
+      </div>
     </Card>
   )
 }

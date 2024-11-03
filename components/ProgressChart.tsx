@@ -24,20 +24,14 @@ ChartJS.register(
   Legend
 );
 
-interface ChartData {
-  timestamp: number;
+export interface ChartData {
   date: Date;
+  timestamp: number;
   metrics: {
-    weight: number;
-    height: number;
-    bodyFat: number;
     overallScore: number;
-    exerciseScore: number;
-    wellbeingScore: number;
-    nutritionScore: number;
-    bmi: number;
+    [key: string]: number;
   };
-  answers: Record<string, string | number>;
+  answers: Record<string, string | number | boolean | string[]>;
 }
 
 interface ProgressChartProps {
@@ -75,8 +69,7 @@ export const ProgressChart: React.FC<ProgressChartProps> = ({ assessments }) => 
   };
 
   return (
-    <div className="p-6 bg-black/30 rounded-lg deep-space-border">
-      <h3 className="text-xl font-semibold mb-4">Your Progress</h3>
+    <div className="w-full h-full">
       <Line 
         data={data}
         options={{

@@ -1,5 +1,5 @@
 import React from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { InfoIcon } from "lucide-react"
@@ -18,10 +18,10 @@ export const RecommendedIntakeCard: React.FC<RecommendedIntakeCardProps> = ({ he
   
   return (
     <Card className={cn("bg-black/30 rounded-lg deep-space-border", "border-0")}>
-      <CardHeader>
-        <CardTitle>Recommended Daily Intake</CardTitle>
-      </CardHeader>
-      <CardContent>
+      <div className="p-6">
+        <h3 className="text-lg font-semibold leading-none tracking-tight">Recommended Daily Intake</h3>
+      </div>
+      <div className="p-6 pt-0">
         <p className="mb-4">Based on your goals, current status, and carbohydrate preference, we recommend:</p>
         <dl className="space-y-2">
           {[
@@ -47,7 +47,7 @@ export const RecommendedIntakeCard: React.FC<RecommendedIntakeCardProps> = ({ he
           ))}
         </dl>
         <p className="text-sm text-gray-400 mt-4">Note: These recommendations are tailored to your carbohydrate preference. Consult with a nutritionist for a personalized plan.</p>
-      </CardContent>
+      </div>
     </Card>
   )
 }

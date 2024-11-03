@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { AlertTriangle } from "lucide-react"
-import { AnswerType } from '@/data/questions'
 import { useHealthCalculations } from '@/hooks/useHealthCalculations'
 import { calculateScore, getHealthGoalAdvice, getSectionFeedback, getMealFeedback } from '@/utils/healthUtils'
 import { BodyCompositionCard } from '@/components/BodyCompositionCard'
@@ -24,6 +23,10 @@ import { SpaceTheme } from '@/components/SpaceTheme'
 import { getContextualAnalysis } from '@/utils/analysisUtils'
 import { ContextualAlert } from '@/components/ContextualAlert'
 import { RecommendedIntakeCard } from '@/components/RecommendedIntakeCard';
+import { AuthModal } from '@/components/auth'
+import { db } from '@/lib/firebase'
+import { doc, getDoc } from 'firebase/firestore'
+import type { SummarySection } from '@/hooks/useAISummary';
 
 // Add at the top with other imports/types
 interface ContextualAnalysis {
@@ -44,6 +47,30 @@ interface SectionData {
   summary?: string;
 }
 
+interface AnswerType {
+  [key: string]: string | number | string[];
+}
+
+interface AssessmentData {
+  answers: AnswerType;
+  timestamp?: number;
+  userId?: string;
+  healthCalculations?: {
+    bmi: number | null;
+    bmiCategory: string | null;
+    bmr: number | null;
+    tdee: number | null;
+    bodyFat: number | null;
+    isBodyFatEstimated: boolean;
+    idealWeightLow: number | null;
+    idealWeightHigh: number | null;
+    recommendedCalories: number | null;
+    proteinGrams: number | null;
+    carbGrams: number | null;
+    fatGrams: number | null;
+  };
+}
+
 const getSummary = (answers: AnswerType) => {
   const sections = [
     { title: "Exercise Habits", items: ["activityLevel", "exerciseIntensity", "exerciseDuration"] },
@@ -55,7 +82,11 @@ const getSummary = (answers: AnswerType) => {
   return sections.map(section => {
     const sectionFeedback = section.items.map(item => {
       const answer = answers[item];
-      const feedback = getSectionFeedback(item, typeof answer === 'string' ? answer : answer.toString());
+      const safeAnswer = getSafeAnswer(answer);
+      const feedback = getSectionFeedback(item, safeAnswer);
+      
+      console.log('Processing item:', item, 'Answer:', answer, 'Safe Answer:', safeAnswer);
+      
       return {
         item,
         ...feedback,
@@ -72,102 +103,95 @@ const getSummary = (answers: AnswerType) => {
   });
 };
 
+// Add this helper function at the top of your component or in a utils file
+const getSafeAnswer = (answer: string | number | string[] | null | undefined): string => {
+  if (answer === undefined || answer === null) {
+    return '';
+  }
+  if (typeof answer === 'string') {
+    return answer;
+  }
+  if (Array.isArray(answer)) {
+    return answer.join(', ');
+  }
+  try {
+    return String(answer);
+  } catch {
+    return '';
+  }
+};
+
 export default function ResultsPage() {
   const { user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [saved, setSaved] = useState(false);
-  const answers = useMemo(() => {
-    return JSON.parse(searchParams?.get('answers') || '{}');
-  }, [searchParams]);
+  const [loading, setLoading] = useState(true);
+  const [answers, setAnswers] = useState<AnswerType>({});
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
-  // Calculate all values before using them
+  // Move all calculations to top level
   const healthCalculations = useHealthCalculations(answers);
   
   const score = useMemo(() => {
-    const calculatedScore = calculateScore(answers, healthCalculations);
-    return typeof calculatedScore === 'number' ? calculatedScore : 0;
+    return calculateScore(answers, healthCalculations);
   }, [answers, healthCalculations]);
 
   const summary = useMemo(() => getSummary(answers), [answers]);
-  const { aiSummary, isLoading } = useAISummary(summary);
 
-  // Get analyses after all calculations are done
+  // Convert answers to the correct format before passing to useAISummary
+  const formattedSummary: SummarySection[] = useMemo(() => {
+    return Object.entries(answers).map(([key, value]) => ({
+      title: key,
+      score: typeof value === 'number' ? value : 0,
+      feedbackItems: [{
+        item: key,
+        score: typeof value === 'number' ? value : 0,
+        feedback: '',
+        recommendations: [],
+        color: 'default'
+      }]
+    }));
+  }, [answers]);
+
+  // Update the useAISummary calls
+  const { 
+    aiSummary: exerciseAISummary, 
+    isLoading: isLoadingExercise 
+  } = useAISummary(formattedSummary);
+
+  const { 
+    aiSummary: nutritionAISummary, 
+    isLoading: isLoadingNutrition 
+  } = useAISummary(formattedSummary);
+
+  const { 
+    aiSummary: wellbeingAISummary, 
+    isLoading: isLoadingWellbeing 
+  } = useAISummary(formattedSummary);
+
+  // Analyses
   const exerciseAnalysis = useMemo(() => 
     getContextualAnalysis('exercise', answers), [answers]);
+  
   const wellbeingAnalysis = useMemo(() => 
     getContextualAnalysis('wellbeing', answers), [answers]);
+  
   const nutritionAnalysis = useMemo(() => 
     getContextualAnalysis('nutrition', answers), [answers]);
 
-  useEffect(() => {
-    async function saveResult() {
-      if (!user || saved || !searchParams) return;
-      
-      try {
-        if (Object.keys(answers).length === 0) return;
+  // Combined loading state
+  const isLoading = useMemo(() => 
+    loading || isLoadingExercise || isLoadingNutrition || isLoadingWellbeing,
+    [loading, isLoadingExercise, isLoadingNutrition, isLoadingWellbeing]
+  );
 
-        const result = {
-          userId: user.uid,
-          timestamp: Date.now(),
-          answers,
-          metrics: {
-            bmi: typeof healthCalculations.bmi === 'number' ? healthCalculations.bmi : null,
-            weight: typeof healthCalculations.weight === 'number' ? Number(healthCalculations.weight) : null,
-            height: typeof healthCalculations.height === 'number' ? Number(healthCalculations.height) : null,
-            bodyFat: typeof healthCalculations.bodyFat === 'number' ? Number(healthCalculations.bodyFat) : null,
-            overallScore: score
-          },
-          analysis: {
-            exercise: exerciseAnalysis ? JSON.stringify(exerciseAnalysis) : null,
-            nutrition: nutritionAnalysis ? JSON.stringify(nutritionAnalysis) : null,
-            wellbeing: wellbeingAnalysis ? JSON.stringify(wellbeingAnalysis) : null
-          },
-          healthCalculations: Object.fromEntries(
-            Object.entries(healthCalculations).map(([key, value]) => [
-              key,
-              typeof value === 'number' ? Number(value) || null :
-              typeof value === 'string' ? value : null
-            ])
-          ) as Record<string, string | number | null>
-        };
-
-        await saveAssessmentResult(result);
-        setSaved(true);
-      } catch (error) {
-        console.error('Error saving result:', error);
-      }
-    }
-
-    saveResult();
-  }, [user, saved, searchParams, answers, score, healthCalculations, 
-      exerciseAnalysis, nutritionAnalysis, wellbeingAnalysis]);
-
+  // Move before any conditional returns
   const handleRetake = useCallback(() => {
-    router.push('/health-assessment')
-  }, [router])
+    router.push('/questions')
+  }, [router]);
 
-  const isGoalMisaligned = () => {
-    const goals = answers.goals as string[]
-    return (healthCalculations.bmiCategory === "Underweight" && goals.includes("weight-loss")) ||
-           (healthCalculations.bmiCategory === "Obese" && goals.includes("muscle-gain"))
-  };
-
-  // Add console.log to see what answers we're working with
-  console.log('Current answers:', answers);
-
-  // Group analyses with their relevant sections
-  const sectionSummariesWithContext = summary.map(section => ({
-    ...section,
-    contextualAnalyses: [] as ContextualAnalysis[],
-    summary: `Your ${section.title.toLowerCase()} score is ${section.score}%. ${
-      section.score >= 80 ? 'Great job!' : 
-      section.score >= 60 ? 'There\'s room for improvement.' : 
-      'This area needs attention.'
-    }`
-  }));
-
-  const generateSummary = () => {
+  const generateSummary = useCallback(() => {
     const improvements: { section: string; items: string[] }[] = [];
     const strengths: string[] = [];
 
@@ -193,47 +217,138 @@ export default function ResultsPage() {
     });
 
     return { improvements, strengths };
+  }, [answers, summary]);
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const assessmentId = searchParams?.get('assessmentId')
+        if (assessmentId) {
+          const docRef = doc(db, 'assessments', assessmentId)
+          const docSnap = await getDoc(docRef)
+          if (docSnap.exists()) {
+            const data = docSnap.data() as AssessmentData
+            setAnswers(data.answers)
+          }
+        } else {
+          const answersParam = searchParams?.get('answers')
+          if (answersParam) {
+            setAnswers(JSON.parse(answersParam))
+          }
+        }
+      } catch (error) {
+        console.error('Error loading assessment:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadData()
+  }, [searchParams])
+
+  useEffect(() => {
+    const saveData = async () => {
+      if (!user || saved || !searchParams) return;
+      
+      try {
+        if (Object.keys(answers).length === 0) return;
+
+        await saveAssessmentResult(
+          user?.uid || 'anonymous',
+          {
+            answers,
+            healthCalculations,
+            score,
+            summary: {
+              exercise: exerciseAISummary,
+              nutrition: nutritionAISummary,
+              wellbeing: wellbeingAISummary
+            },
+            timestamp: Date.now()
+          }
+        );
+        setSaved(true);
+      } catch (error) {
+        console.error('Error saving result:', error);
+      }
+    };
+    
+    if (searchParams?.get('new') === 'true' && !saved) {
+      saveData();
+    }
+  }, [
+    searchParams,
+    exerciseAISummary,
+    nutritionAISummary,
+    wellbeingAISummary,
+    answers,
+    healthCalculations,
+    saved,
+    score,
+    user
+  ]);
+
+  const isGoalMisaligned = () => {
+    const goals = answers.goals as string[]
+    return (healthCalculations.bmiCategory === "Underweight" && goals.includes("weight-loss")) ||
+           (healthCalculations.bmiCategory === "Obese" && goals.includes("muscle-gain"))
   };
+
+  // Add console.log to see what answers we're working with
+  console.log('Current answers:', answers);
+
+  // Group analyses with their relevant sections
+  const sectionSummariesWithContext = summary.map(section => ({
+    ...section,
+    contextualAnalyses: [] as ContextualAnalysis[],
+    summary: `Your ${section.title.toLowerCase()} score is ${section.score}%. ${
+      section.score >= 80 ? 'Great job!' : 
+      section.score >= 60 ? 'There\'s room for improvement.' : 
+      'This area needs attention.'
+    }`
+  }));
 
   const { improvements, strengths } = generateSummary();
 
-  const NextStepsSection = () => (
+  const CTASection = () => (
     <section className="bg-black/30 rounded-lg p-8 deep-space-border">
-      <h3 className="text-2xl font-semibold mb-6">Your Next Steps</h3>
-      <p className="mb-4">Based on your personalized health analysis, consider these key actions:</p>
-      <ol className="list-decimal list-inside space-y-2 mb-6">
-        <li>Review your section summaries and focus on improving your lowest-scoring areas</li>
-        <li>Implement the specific advice given for your chosen health goals</li>
-        <li>Track your progress using the metrics provided in your body composition analysis</li>
-        <li>Consult with a health professional for personalized guidance on complex health matters</li>
-      </ol>
-      <div className="mt-8 text-center">
+      <h3 className="text-2xl font-semibold mb-6">
+        {user ? 'View Your Progress' : 'Track Your Progress'}
+      </h3>
+      <div className="text-center">
         {user ? (
-          <>
-            <p className="text-lg mb-4">Ready to track your progress?</p>
+          <div className="space-y-4">
             <Button 
               onClick={() => router.push('/dashboard')}
               variant="primary"
-              className="px-6 py-3 text-lg font-semibold"
+              className="w-full md:w-auto px-6 py-3"
             >
-              View Your Dashboard
+              Go to Dashboard
             </Button>
-          </>
+            <p className="text-sm text-gray-400">
+              View your progress, track changes, and get detailed insights
+            </p>
+          </div>
         ) : (
-          <>
-            <p className="text-lg mb-4">Ready to dive deeper into your health journey with expert guidance?</p>
+          <div className="space-y-4">
+            <p className="text-lg mb-6">
+              Want to track your progress and see detailed insights over time?
+            </p>
             <Button 
-              onClick={() => {/* Add your booking logic here */}}
+              onClick={() => setIsAuthModalOpen(true)}
               variant="primary"
-              className="px-6 py-3 text-lg font-semibold"
+              className="w-full md:w-auto px-6 py-3"
             >
-              Book Your Free Health Strategy Session
+              Sign Up for Free
             </Button>
-          </>
+            <p className="text-sm text-gray-400">
+              Create an account to unlock: Dashboard access, progress tracking, and more
+            </p>
+          </div>
         )}
       </div>
     </section>
-  );
+  )
 
   return (
     <div className="min-h-screen flex flex-col relative overflow-x-hidden">
@@ -367,11 +482,13 @@ export default function ResultsPage() {
             
             {isLoading ? (
               <Skeleton className="w-full h-40" />
-            ) : aiSummary ? (
+            ) : (exerciseAISummary || nutritionAISummary || wellbeingAISummary) ? (
               <div className="prose prose-invert">
-                {aiSummary.split('\n').map((paragraph, index) => (
-                  <p key={index} className="mb-4">{paragraph}</p>
-                ))}
+                {[exerciseAISummary, nutritionAISummary, wellbeingAISummary]
+                  .filter((summary): summary is string => Boolean(summary))
+                  .map((summary: string, index: number) => (
+                    <p key={index} className="mb-4">{summary}</p>
+                  ))}
               </div>
             ) : (
               <>
@@ -439,13 +556,17 @@ export default function ResultsPage() {
             )}
           </section>
 
-          <NextStepsSection />
+          <CTASection />
 
           <p className="mt-4 text-sm text-gray-300">
             Remember, these suggestions are based on general guidelines. For a tailored approach to achieving your health goals, consider consulting with a health professional.
           </p>
         </div>
       </div>
+      <AuthModal 
+        isOpen={isAuthModalOpen} 
+        onClose={() => setIsAuthModalOpen(false)}
+      />
     </div>
   )
 }
