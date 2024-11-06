@@ -14,7 +14,7 @@ interface SectionProps {
       recommendations: string;
     };
   }[];
-  contextualAnalyses?: ContextualAnalysis[];
+  contextualAnalyses: ContextualAnalysis[];
 }
 
 export const Section: React.FC<SectionProps> = ({ title, items, contextualAnalyses }) => {

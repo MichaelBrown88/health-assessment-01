@@ -27,13 +27,8 @@ import { AuthModal } from '@/components/auth'
 import { db } from '@/lib/firebase'
 import { doc, getDoc } from 'firebase/firestore'
 import type { SummarySection } from '@/hooks/useAISummary';
-
-// Add at the top with other imports/types
-interface ContextualAnalysis {
-  type: string;
-  analysis: string;
-  recommendation: string;
-}
+import { ContextualAnalysis } from '@/types/ContextualAnalysis';
+import { PaywallModal } from '@/components/PaywallModal';
 
 // At the top with other interfaces
 interface SectionData {
@@ -310,45 +305,54 @@ export default function ResultsPage() {
 
   const { improvements, strengths } = generateSummary();
 
-  const CTASection = () => (
-    <section className="bg-black/30 rounded-lg p-8 deep-space-border">
-      <h3 className="text-2xl font-semibold mb-6">
-        {user ? 'View Your Progress' : 'Track Your Progress'}
-      </h3>
-      <div className="text-center">
-        {user ? (
-          <div className="space-y-4">
-            <Button 
-              onClick={() => router.push('/dashboard')}
-              variant="primary"
-              className="w-full md:w-auto px-6 py-3"
-            >
-              Go to Dashboard
-            </Button>
-            <p className="text-sm text-gray-400">
-              View your progress, track changes, and get detailed insights
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            <p className="text-lg mb-6">
-              Want to track your progress and see detailed insights over time?
-            </p>
-            <Button 
-              onClick={() => setIsAuthModalOpen(true)}
-              variant="primary"
-              className="w-full md:w-auto px-6 py-3"
-            >
-              Sign Up for Free
-            </Button>
-            <p className="text-sm text-gray-400">
-              Create an account to unlock: Dashboard access, progress tracking, and more
-            </p>
-          </div>
-        )}
-      </div>
-    </section>
-  )
+  const CTASection = () => {
+    const [showPaywall, setShowPaywall] = useState(false);
+    
+    return (
+      <section className="bg-black/30 rounded-lg p-8 deep-space-border">
+        <h3 className="text-2xl font-semibold mb-6">
+          {user ? 'View Your Progress' : 'Track Your Progress'}
+        </h3>
+        <div className="text-center">
+          {user ? (
+            <div className="space-y-4">
+              <Button 
+                onClick={() => router.push('/dashboard')}
+                variant="primary"
+                className="w-full md:w-auto px-6 py-3"
+              >
+                Go to Dashboard
+              </Button>
+              <p className="text-sm text-gray-400">
+                View your progress, track changes, and get detailed insights
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <p className="text-lg mb-6">
+                Ready to unlock detailed insights and track your progress over time?
+              </p>
+              <Button 
+                onClick={() => setShowPaywall(true)}
+                variant="primary"
+                className="w-full md:w-auto px-6 py-3"
+              >
+                Unlock Full Access
+              </Button>
+              <p className="text-sm text-gray-400">
+                Get access to your personalized dashboard, progress tracking, and AI-powered insights
+              </p>
+            </div>
+          )}
+        </div>
+
+        <PaywallModal 
+          isOpen={showPaywall} 
+          onClose={() => setShowPaywall(false)} 
+        />
+      </section>
+    );
+  };
 
   return (
     <div className="min-h-screen flex flex-col relative overflow-x-hidden">

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { useRouter } from 'next/navigation'
 
 interface SignUpProps {
   onSuccess: () => void
@@ -18,6 +19,7 @@ export function SignUp({ onSuccess }: SignUpProps) {
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const { signUp } = useAuth()
+  const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -33,6 +35,7 @@ export function SignUp({ onSuccess }: SignUpProps) {
     try {
       await signUp(email, password)
       onSuccess()
+      router.push('/welcome')
     } catch (error: unknown) {
       const errorMessage = error instanceof Error 
         ? error.message 
@@ -54,6 +57,7 @@ export function SignUp({ onSuccess }: SignUpProps) {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
+          disabled={isLoading}
         />
       </div>
       <div className="space-y-2">
@@ -65,6 +69,7 @@ export function SignUp({ onSuccess }: SignUpProps) {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
+          disabled={isLoading}
         />
       </div>
       <div className="space-y-2">
@@ -76,6 +81,7 @@ export function SignUp({ onSuccess }: SignUpProps) {
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
           required
+          disabled={isLoading}
         />
       </div>
       {error && (

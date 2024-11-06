@@ -13,20 +13,20 @@ import {
 } from './ui/dropdown-menu'
 import {
   User,
-  LayoutDashboard,
-  ClipboardCheck,
-  Settings,
-  History,
   LogOut,
-  HelpCircle,
+  ClipboardCheck,
+  LayoutDashboard
 } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 
 export function UserProfile() {
   const { user, logout } = useAuth()
+  const router = useRouter()
 
   const handleLogout = async () => {
     try {
       await logout()
+      router.push('/welcome')
     } catch (error) {
       console.error('Failed to logout:', error)
     }
@@ -51,13 +51,6 @@ export function UserProfile() {
         <DropdownMenuSeparator className="bg-gray-800" />
         
         <DropdownMenuItem asChild>
-          <Link href="/questions" className="flex items-center text-white hover:text-white cursor-pointer">
-            <ClipboardCheck className="mr-2 h-4 w-4" />
-            Take Assessment
-          </Link>
-        </DropdownMenuItem>
-        
-        <DropdownMenuItem asChild>
           <Link href="/dashboard" className="flex items-center text-white hover:text-white cursor-pointer">
             <LayoutDashboard className="mr-2 h-4 w-4" />
             Dashboard
@@ -65,36 +58,18 @@ export function UserProfile() {
         </DropdownMenuItem>
 
         <DropdownMenuItem asChild>
-          <Link href="/history" className="flex items-center text-white hover:text-white cursor-pointer">
-            <History className="mr-2 h-4 w-4" />
-            View History
+          <Link href="/questions" className="flex items-center text-white hover:text-white cursor-pointer">
+            <ClipboardCheck className="mr-2 h-4 w-4" />
+            Take Assessment
           </Link>
         </DropdownMenuItem>
-
-        <DropdownMenuSeparator className="bg-gray-800" />
-        
-        <DropdownMenuItem asChild>
-          <Link href="/settings" className="flex items-center text-white hover:text-white cursor-pointer">
-            <Settings className="mr-2 h-4 w-4" />
-            Settings
-          </Link>
-        </DropdownMenuItem>
-
-        <DropdownMenuItem asChild>
-          <Link href="/help" className="flex items-center text-white hover:text-white cursor-pointer">
-            <HelpCircle className="mr-2 h-4 w-4" />
-            Help & Support
-          </Link>
-        </DropdownMenuItem>
-
-        <DropdownMenuSeparator className="bg-gray-800" />
         
         <DropdownMenuItem 
           onClick={handleLogout}
-          className="text-red-400 hover:text-red-400 cursor-pointer"
+          className="text-red-400 hover:text-red-300 cursor-pointer"
         >
           <LogOut className="mr-2 h-4 w-4" />
-          Log out
+          Logout
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

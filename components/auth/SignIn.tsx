@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { useRouter } from 'next/navigation'
 
 interface SignInProps {
   onSuccess: () => void
@@ -17,6 +18,7 @@ export function SignIn({ onSuccess }: SignInProps) {
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const { signIn } = useAuth()
+  const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -26,6 +28,7 @@ export function SignIn({ onSuccess }: SignInProps) {
     try {
       await signIn(email, password)
       onSuccess()
+      router.push('/welcome')
     } catch (error: unknown) {
       const errorMessage = error instanceof Error 
         ? error.message 
@@ -47,6 +50,7 @@ export function SignIn({ onSuccess }: SignInProps) {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
+          disabled={isLoading}
         />
       </div>
       <div className="space-y-2">
@@ -58,6 +62,7 @@ export function SignIn({ onSuccess }: SignInProps) {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
+          disabled={isLoading}
         />
       </div>
       {error && (
