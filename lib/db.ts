@@ -1,8 +1,16 @@
 import { db } from '@/lib/firebase';
-import { doc, collection, getDocs, query, orderBy, deleteDoc, addDoc, where, limit, setDoc } from 'firebase/firestore';
+import { 
+  doc, 
+  collection, 
+  getDocs, 
+  query, 
+  orderBy, 
+  deleteDoc, 
+  setDoc 
+} from 'firebase/firestore';
 import type { AssessmentResult } from '@/types';
 
-interface AssessmentData {
+export interface AssessmentData {
   userId: string;
   timestamp: number;
   answers: Record<string, string | number | boolean | string[]>;
@@ -21,13 +29,16 @@ interface AssessmentData {
   healthCalculations: Record<string, string | number | null>;
 }
 
-export const saveAssessmentResult = async (userId: string, data: {
-  answers: any;
-  healthCalculations: any;
-  score: number;
-  summary: any;
-  timestamp: number;
-}) => {
+export const saveAssessmentResult = async (
+  userId: string, 
+  data: {
+    answers: Record<string, string | number | boolean | string[]>;
+    healthCalculations: Record<string, string | number | null>;
+    score: number;
+    summary: Record<string, string | null>;
+    timestamp: number;
+  }
+) => {
   const assessmentRef = doc(db, 'users', userId, 'assessments', data.timestamp.toString());
   await setDoc(assessmentRef, {
     ...data,
