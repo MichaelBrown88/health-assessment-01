@@ -1,5 +1,5 @@
 import { AnswerType } from '../data/questions'
-import { HealthCalculations } from '../types/HealthCalculations'
+import type { HealthCalculations } from '../types'
 
 export const calculateScore = (answers: AnswerType, healthCalculations: HealthCalculations): number => {
   let score = 0;
