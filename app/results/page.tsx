@@ -248,11 +248,17 @@ export default function ResultsPage() {
       try {
         if (Object.keys(answers).length === 0) return;
 
+        // When saving the health calculations, convert boolean to number
+        const healthCalculationsForSave = {
+          ...healthCalculations,
+          isBodyFatEstimated: healthCalculations.isBodyFatEstimated ? 1 : 0
+        } as Record<string, string | number | null>;
+
         await saveAssessmentResult(
           user?.uid || 'anonymous',
           {
             answers,
-            healthCalculations,
+            healthCalculations: healthCalculationsForSave,
             score,
             summary: {
               exercise: exerciseAISummary,

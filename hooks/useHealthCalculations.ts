@@ -1,21 +1,23 @@
 import { useState, useEffect } from 'react'
 import { AnswerType } from '../data/questions'
-import { HealthCalculations } from '../types/HealthCalculations'
+import type { HealthCalculations } from '../types'
 
 export const useHealthCalculations = (answers: AnswerType): HealthCalculations => {
   const [healthCalculations, setHealthCalculations] = useState<HealthCalculations>({
-    bmi: 0,
-    bmiCategory: '',
-    bmr: 0,
-    tdee: 0,
-    recommendedCalories: 0,
-    proteinGrams: 0,
-    carbGrams: 0,
-    fatGrams: 0,
+    bmi: null,
+    bmiCategory: null,
+    bmr: null,
+    tdee: null,
+    recommendedCalories: null,
+    proteinGrams: null,
+    carbGrams: null,
+    fatGrams: null,
     bodyFat: null,
     isBodyFatEstimated: false,
-    idealWeightLow: 0,
-    idealWeightHigh: 0
+    idealWeightLow: null,
+    idealWeightHigh: null,
+    weight: 0,
+    height: 0
   })
 
   useEffect(() => {
@@ -97,7 +99,9 @@ export const useHealthCalculations = (answers: AnswerType): HealthCalculations =
       bodyFat: bodyFat !== null ? bodyFat : estimatedBodyFat,
       isBodyFatEstimated: bodyFat === null,
       idealWeightLow: Math.round(idealWeightLow),
-      idealWeightHigh: Math.round(idealWeightHigh)
+      idealWeightHigh: Math.round(idealWeightHigh),
+      weight: Number(answers.weight) || 0,
+      height: Number(answers.height) || 0
     });
   }, [answers])
 

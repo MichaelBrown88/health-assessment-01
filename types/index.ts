@@ -28,6 +28,7 @@ export interface HealthCalculations {
   idealWeightHigh: number | null;
   weight: number;
   height: number;
+  [key: string]: string | number | boolean | null;
 }
 
 // Assessment result type
