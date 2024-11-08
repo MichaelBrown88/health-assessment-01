@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react'
 import { SpaceTheme } from '@/components/SpaceTheme'
 import { useAuth } from '@/contexts/AuthContext'
-import { useRouter } from 'next/navigation'
 import { getUserAssessments } from '@/lib/db'
 import type { Assessment, ChartData } from '@/types/assessment'
 import { ProgressChart } from '@/components/ProgressChart'
@@ -21,7 +20,7 @@ import {
 import { calculateStreak, calculateCompletionRate, compareMetrics } from '@/lib/metrics'
 import { Card } from "@/components/ui/card"
 import { PillarOverview } from "../components/dashboard/PillarOverview"
-import { AssessmentHistory } from '../components/dashboard/AssessmentHistory'
+import { AssessmentHistory } from '@/components/dashboard/AssessmentHistory'
 
 // Helper function to convert timestamp to number
 const getTimestampNumber = (timestamp: number | Date | { seconds: number; nanoseconds: number }): number => {
@@ -38,7 +37,6 @@ export default function DashboardPage() {
   const [assessments, setAssessments] = useState<Assessment[]>([]);
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
-  const router = useRouter();
 
   // Add these calculations
   const firstAssessmentDate = assessments.length > 0 
@@ -59,53 +57,31 @@ export default function DashboardPage() {
     : null;
 
   useEffect(() => {
-    const fetchAssessments = async () => {
-      if (!user) {
-        router.push('/login');
-        return;
-      }
-
+    async function fetchAssessments() {
+      if (!user) return;
+      
       try {
-        const data = await getUserAssessments(user.uid);
-        const transformedData: Assessment[] = data.map(assessment => ({
+        const userAssessments = await getUserAssessments(user.uid);
+        
+        // Transform the assessments to include the required score property
+        const transformedAssessments = userAssessments.map(assessment => ({
           ...assessment,
-          timestamp: getTimestampNumber(assessment.timestamp),
           metrics: {
             ...assessment.metrics,
-            exerciseScore: assessment.metrics.exerciseScore,
-            nutritionScore: assessment.metrics.nutritionScore,
-            wellbeingScore: assessment.metrics.wellbeingScore,
-            overallScore: assessment.metrics.overallScore,
-            weight: assessment.metrics.weight,
-            height: assessment.metrics.height,
-            bodyFat: assessment.metrics.bodyFat,
-            bmi: assessment.metrics.bmi,
-          },
-          answers: {
-            activityLevel: String(assessment.answers.activityLevel || ''),
-            exerciseIntensity: String(assessment.answers.exerciseIntensity || ''),
-            exerciseDuration: String(assessment.answers.exerciseDuration || ''),
-            diet: String(assessment.answers.diet || ''),
-            lastMeal: String(assessment.answers.lastMeal || ''),
-            mealFrequency: String(assessment.answers.mealFrequency || ''),
-            sleepDuration: String(assessment.answers.sleepDuration || ''),
-            sleepQuality: String(assessment.answers.sleepQuality || ''),
-            recovery: String(assessment.answers.recovery || ''),
-            stress: String(assessment.answers.stress || ''),
-            mentalHealth: String(assessment.answers.mentalHealth || ''),
-            socializing: String(assessment.answers.socializing || ''),
+            score: assessment.metrics.overallScore // Set score equal to overallScore
           }
         }));
 
-        setAssessments(transformedData);
+        setAssessments(transformedAssessments);
+        
       } catch (error) {
         console.error('Error fetching assessments:', error);
-        setError('Failed to fetch assessments');
+        setError('Failed to load assessments');
       }
-    };
+    }
 
     fetchAssessments();
-  }, [user, router]);
+  }, [user]);
 
   // When passing data to ProgressChart, transform it to match ChartData
   const chartData: ChartData[] = assessments.map(assessment => ({

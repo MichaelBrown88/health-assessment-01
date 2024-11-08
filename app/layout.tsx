@@ -4,6 +4,7 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import { GeistSans } from 'geist/font/sans';
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { UserProfile } from '@/components/UserProfile'
+import { Toaster } from "@/components/ui/toaster"
 
 
 export const metadata: Metadata = {
@@ -33,6 +34,7 @@ export default function RootLayout({
             </div>
           </TooltipProvider>
         </AuthProvider>
+        <Toaster />
       </body>
     </html>
   );

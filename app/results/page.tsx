@@ -13,7 +13,6 @@ import { Section } from '@/components/Section'
 import { cn } from "@/lib/utils"
 import { HealthScoreOverview } from '@/components/HealthScoreOverview'
 import { formatTitle } from '@/utils/healthUtils'
-import { useAISummary } from '@/hooks/useAISummary'
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { InfoIcon } from "lucide-react"
@@ -21,27 +20,17 @@ import { useAuth } from '@/contexts/AuthContext'
 import { saveAssessmentResult } from '@/lib/db'
 import { SpaceTheme } from '@/components/SpaceTheme'
 import { getContextualAnalysis } from '@/utils/analysisUtils'
-import { ContextualAlert } from '@/components/ContextualAlert'
 import { RecommendedIntakeCard } from '@/components/RecommendedIntakeCard';
 import { AuthModal } from '@/components/auth'
 import { db } from '@/lib/firebase'
 import { doc, getDoc } from 'firebase/firestore'
-import type { SummarySection } from '@/hooks/useAISummary';
 import { ContextualAnalysis } from '@/types/ContextualAnalysis';
 import { PaywallModal } from '@/components/PaywallModal';
+import { generateStructuredSummary } from '@/utils/summaryUtils';
+import { AIHealthCoach } from '@/components/AIHealthCoach';
+import { AITriggerButton } from '@/components/AITriggerButton';
 
 // At the top with other interfaces
-interface SectionData {
-  title: string;
-  score: number;
-  feedbackItems: Array<{
-    item: string;
-    color?: string;
-  }>;
-  contextualAnalyses?: ContextualAnalysis[];
-  summary?: string;
-}
-
 interface AnswerType {
   [key: string]: string | number | string[];
 }
@@ -116,6 +105,16 @@ const getSafeAnswer = (answer: string | number | string[] | null | undefined): s
   }
 };
 
+// Add this helper function to transform the structured feedback
+const transformSummaryForDB = (structuredSummary: ReturnType<typeof generateStructuredSummary>): Record<string, string | null> => {
+  return {
+    exercise: structuredSummary.exercise?.message || null,
+    nutrition: structuredSummary.nutrition?.message || null,
+    sleep: structuredSummary.sleep?.message || null,
+    mentalHealth: structuredSummary.mentalHealth?.message || null
+  };
+};
+
 export default function ResultsPage() {
   const { user } = useAuth();
   const router = useRouter();
@@ -134,37 +133,6 @@ export default function ResultsPage() {
 
   const summary = useMemo(() => getSummary(answers), [answers]);
 
-  // Convert answers to the correct format before passing to useAISummary
-  const formattedSummary: SummarySection[] = useMemo(() => {
-    return Object.entries(answers).map(([key, value]) => ({
-      title: key,
-      score: typeof value === 'number' ? value : 0,
-      feedbackItems: [{
-        item: key,
-        score: typeof value === 'number' ? value : 0,
-        feedback: '',
-        recommendations: [],
-        color: 'default'
-      }]
-    }));
-  }, [answers]);
-
-  // Update the useAISummary calls
-  const { 
-    aiSummary: exerciseAISummary, 
-    isLoading: isLoadingExercise 
-  } = useAISummary(formattedSummary);
-
-  const { 
-    aiSummary: nutritionAISummary, 
-    isLoading: isLoadingNutrition 
-  } = useAISummary(formattedSummary);
-
-  const { 
-    aiSummary: wellbeingAISummary, 
-    isLoading: isLoadingWellbeing 
-  } = useAISummary(formattedSummary);
-
   // Analyses
   const exerciseAnalysis = useMemo(() => 
     getContextualAnalysis('exercise', answers), [answers]);
@@ -175,44 +143,10 @@ export default function ResultsPage() {
   const nutritionAnalysis = useMemo(() => 
     getContextualAnalysis('nutrition', answers), [answers]);
 
-  // Combined loading state
-  const isLoading = useMemo(() => 
-    loading || isLoadingExercise || isLoadingNutrition || isLoadingWellbeing,
-    [loading, isLoadingExercise, isLoadingNutrition, isLoadingWellbeing]
-  );
-
   // Move before any conditional returns
   const handleRetake = useCallback(() => {
     router.push('/questions')
   }, [router]);
-
-  const generateSummary = useCallback(() => {
-    const improvements: { section: string; items: string[] }[] = [];
-    const strengths: string[] = [];
-
-    summary.forEach((section: SectionData) => {
-      const improvementItems: string[] = [];
-      let allGreen = true;
-
-      section.feedbackItems.forEach((item: { item: string; color?: string }) => {
-        const feedbackData = getSectionFeedback(item.item, answers[item.item] as string);
-        if (feedbackData.color === 'amber' || feedbackData.color === 'red') {
-          improvementItems.push(item.item);
-          allGreen = false;
-        }
-      });
-
-      if (improvementItems.length > 0) {
-        improvements.push({ section: section.title, items: improvementItems });
-      }
-
-      if (allGreen) {
-        strengths.push(section.title);
-      }
-    });
-
-    return { improvements, strengths };
-  }, [answers, summary]);
 
   useEffect(() => {
     async function loadData() {
@@ -248,11 +182,18 @@ export default function ResultsPage() {
       try {
         if (Object.keys(answers).length === 0) return;
 
-        // When saving the health calculations, convert boolean to number
         const healthCalculationsForSave = {
           ...healthCalculations,
           isBodyFatEstimated: healthCalculations.isBodyFatEstimated ? 1 : 0
         } as Record<string, string | number | null>;
+
+        // Generate and transform the summary
+        const structuredSummary = generateStructuredSummary({
+          exercise: summary.find(s => s.title === 'Exercise Habits')?.score || 0,
+          nutrition: summary.find(s => s.title === 'Diet and Nutrition')?.score || 0,
+          sleep: summary.find(s => s.title === 'Rest and Recovery')?.score || 0,
+          mentalHealth: summary.find(s => s.title === 'Mental Health')?.score || 0
+        });
 
         await saveAssessmentResult(
           user?.uid || 'anonymous',
@@ -260,11 +201,7 @@ export default function ResultsPage() {
             answers,
             healthCalculations: healthCalculationsForSave,
             score,
-            summary: {
-              exercise: exerciseAISummary,
-              nutrition: nutritionAISummary,
-              wellbeing: wellbeingAISummary
-            },
+            summary: transformSummaryForDB(structuredSummary),
             timestamp: Date.now()
           }
         );
@@ -279,14 +216,12 @@ export default function ResultsPage() {
     }
   }, [
     searchParams,
-    exerciseAISummary,
-    nutritionAISummary,
-    wellbeingAISummary,
     answers,
     healthCalculations,
     saved,
     score,
-    user
+    user,
+    summary
   ]);
 
   const isGoalMisaligned = () => {
@@ -297,19 +232,6 @@ export default function ResultsPage() {
 
   // Add console.log to see what answers we're working with
   console.log('Current answers:', answers);
-
-  // Group analyses with their relevant sections
-  const sectionSummariesWithContext = summary.map(section => ({
-    ...section,
-    contextualAnalyses: [] as ContextualAnalysis[],
-    summary: `Your ${section.title.toLowerCase()} score is ${section.score}%. ${
-      section.score >= 80 ? 'Great job!' : 
-      section.score >= 60 ? 'There\'s room for improvement.' : 
-      'This area needs attention.'
-    }`
-  }));
-
-  const { improvements, strengths } = generateSummary();
 
   const CTASection = () => {
     const [showPaywall, setShowPaywall] = useState(false);
@@ -401,11 +323,16 @@ export default function ResultsPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <BodyCompositionCard 
+              healthCalculations={healthCalculations}
+              answers={answers}
+              score={score}
+              footer="Note: These calculations are estimates."
+            />
+            <RecommendedIntakeCard 
               healthCalculations={healthCalculations} 
               answers={answers}
-              footer="Note: These calculations are estimates. For a more accurate assessment, consult a healthcare professional."
+              score={score}
             />
-            <RecommendedIntakeCard healthCalculations={healthCalculations} />
           </div>
 
           <section className="bg-black/30 rounded-lg p-8 deep-space-border">
@@ -473,96 +400,69 @@ export default function ResultsPage() {
                   };
                 })}
                 contextualAnalyses={contextualAnalyses}
-              />
+              >
+                <AITriggerButton 
+                  assessmentData={{
+                    answers,
+                    healthCalculations,
+                    score
+                  }}
+                  variant="icon"
+                  size="small"
+                />
+              </Section>
             );
           })}
 
           <section className="bg-black/30 rounded-lg p-8 deep-space-border">
-            <h3 className="text-2xl font-semibold mb-6 flex items-center">
-              Health Analysis Summary
-              <Tooltip>
-                <TooltipTrigger>
-                  <InfoIcon className="w-3 h-3 ml-1 text-gray-400" />
-                </TooltipTrigger>
-                <TooltipContent>
-                  <span className="max-w-xs">This summary is generated using AI with strict parameters based on your health data.</span>
-                </TooltipContent>
-              </Tooltip>
-            </h3>
-            
-            {isLoading ? (
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-2xl font-semibold">Health Analysis Summary</h3>
+              <AITriggerButton 
+                assessmentData={{
+                  answers,
+                  healthCalculations,
+                  score
+                }}
+                variant="icon"
+                size="default"
+              />
+            </div>
+            {loading ? (
               <Skeleton className="w-full h-40" />
-            ) : (exerciseAISummary || nutritionAISummary || wellbeingAISummary) ? (
-              <div className="prose prose-invert">
-                {[exerciseAISummary, nutritionAISummary, wellbeingAISummary]
-                  .filter((summary): summary is string => Boolean(summary))
-                  .map((summary: string, index: number) => (
-                    <p key={index} className="mb-4">{summary}</p>
-                  ))}
-              </div>
             ) : (
-              <>
-                {improvements.length > 0 && (
-                  <div className="mb-6">
-                    <h4 className="text-xl font-medium mb-4">Areas for Improvement</h4>
-                    {improvements.map((area, index) => (
-                      <div key={index} className="mb-4">
-                        <h5 className="text-lg font-medium">{area.section}</h5>
-                        <ul className="list-disc pl-5 space-y-2">
-                          {area.items.map((item, itemIndex) => (
-                            <li key={itemIndex} className="text-yellow-400">{item}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                
-                {strengths.length > 0 && (
-                  <div className="mb-6">
-                    <h4 className="text-xl font-medium mb-4">Your Strengths</h4>
-                    <ul className="list-disc pl-5 space-y-2">
-                      {strengths.map((item, index) => (
-                        <li key={index} className="text-green-400">{item}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                <div className="mt-6">
-                  <h4 className="text-xl font-medium mb-4">Section Summaries</h4>
-                  {sectionSummariesWithContext.map((item: SectionData, index) => (
-                    <div key={index} className="mb-6 p-4 bg-black/20 rounded-lg border border-gray-700">
-                      {/* Section title and summary */}
-                      <div className="mb-4">
-                        <h5 className="text-lg font-medium mb-2">{item.title}</h5>
-                        <p>{item.summary}</p>
-                      </div>
-                      
-                      {/* Contextual Analysis */}
-                      {(item.contextualAnalyses && item.contextualAnalyses.length > 0) ? (
-                        <div className="mt-4 border-t border-gray-700 pt-4">
-                          <h6 className="text-md font-medium mb-2 text-yellow-400">Important Feedback:</h6>
-                          <ContextualAlert 
-                            analysis={item.contextualAnalyses}
-                            className="text-sm"
-                          />
-                        </div>
-                      ) : (
-                        <div className="mt-4 text-gray-400 text-sm">
-                          No specific recommendations for this section.
-                        </div>
+              <div className="space-y-6">
+                {Object.entries(generateStructuredSummary({
+                  exercise: summary.find(s => s.title === 'Exercise Habits')?.score || 0,
+                  nutrition: summary.find(s => s.title === 'Diet and Nutrition')?.score || 0,
+                  sleep: summary.find(s => s.title === 'Rest and Recovery')?.score || 0,
+                  mentalHealth: summary.find(s => s.title === 'Mental Health')?.score || 0,
+                  healthCalculations
+                })).map(([section, feedback]) => (
+                  feedback && (
+                    <div key={section} className={cn(
+                      "bg-black/30 rounded-lg p-6",
+                      section === 'bodyComposition' && "border-t-4 border-blue-500"
+                    )}>
+                      <h3 className="text-xl font-semibold mb-4 capitalize">
+                        {section === 'bodyComposition' ? 'Body Composition & Nutrition Plan' : section}
+                      </h3>
+                      <p className="mb-4">{feedback.message}</p>
+                      {feedback.recommendations?.length > 0 && (
+                        <>
+                          <h4 className="font-medium mb-2">Recommendations:</h4>
+                          <ul className="list-disc pl-5 space-y-2">
+                            {feedback.recommendations?.map((rec: string, index: number) => (
+                              <li key={index} className="text-gray-300">
+                                {rec}
+                              </li>
+                            ))}
+                          </ul>
+                        </>
                       )}
                     </div>
-                  ))}
-                </div>
-
-                <div className="mt-6">
-                  <p className="text-lg">
-                    Focus on improving the specific areas highlighted above. Maintain your strong areas and consider consulting with a healthcare professional for personalized advice.
-                  </p>
-                </div>
-              </>
+                  )
+                ))}
+              </div>
             )}
           </section>
 

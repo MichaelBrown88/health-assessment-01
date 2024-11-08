@@ -14,13 +14,11 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-const app = initializeApp(firebaseConfig);
+export const firebaseApp = initializeApp(firebaseConfig);
 
 // Initialize Firebase services
-export const db = getFirestore(app);
-export const auth = getAuth(app);
+export const db = getFirestore(firebaseApp);
+export const auth = getAuth(firebaseApp);
 
 // Remove or comment out analytics if not using it
-// const analytics = getAnalytics(app);
-
-export default app;
+// const analytics = getAnalytics(firebaseApp);

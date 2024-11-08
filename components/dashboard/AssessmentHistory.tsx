@@ -28,17 +28,24 @@ export function AssessmentHistory({ assessments }: AssessmentHistoryProps) {
             <div className="flex justify-between items-center">
               <div>
                 <p className="text-white font-medium">
-                  Score: {assessment.metrics.overallScore.toFixed(1)}
+                  Score: {assessment.metrics.score.toFixed(1)}
                 </p>
                 <p className="text-sm text-gray-400">
                   {formatDate(assessment.timestamp)}
                 </p>
               </div>
-              <div className="text-blue-400 text-sm">View Details →</div>
+              <div className="text-blue-400 text-sm hover:text-blue-300 transition-colors">
+                View Details →
+              </div>
             </div>
           </div>
         ))}
+        {assessments.length === 0 && (
+          <div className="text-center text-gray-400 py-4">
+            No assessments yet
+          </div>
+        )}
       </div>
     </Card>
   )
-}
+} 

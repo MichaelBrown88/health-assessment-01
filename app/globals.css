@@ -242,3 +242,33 @@ input[type="text"], input[type="number"], input[type="email"], select {
 .TabsTrigger[data-state="inactive"] {
   background: rgba(107, 114, 128, 0.5); /* This is equivalent to bg-gray-700/50 */
 }
+
+.shadow-glow {
+  box-shadow: 0 0 15px rgba(56, 189, 248, 0.2);
+}
+
+.shadow-glow {
+  box-shadow: 0 0 15px rgba(56, 189, 248, 0.2);
+}
+
+@layer utilities {
+  .deep-space-gradient {
+    background: linear-gradient(
+      135deg, 
+      rgba(56, 189, 248, 0.2) 0%,
+      rgba(103, 232, 249, 0.2) 50%,
+      rgba(186, 230, 253, 0.2) 100%
+    );
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(56, 189, 248, 0.3);
+  }
+
+  .shadow-glow {
+    box-shadow: 0 0 20px rgba(56, 189, 248, 0.3);
+    transition: box-shadow 0.3s ease;
+  }
+
+  .shadow-glow:hover {
+    box-shadow: 0 0 30px rgba(56, 189, 248, 0.5);
+  }
+}

@@ -15,12 +15,16 @@ interface SectionProps {
     };
   }[];
   contextualAnalyses: ContextualAnalysis[];
+  children?: React.ReactNode;
 }
 
-export const Section: React.FC<SectionProps> = ({ title, items, contextualAnalyses }) => {
+export function Section({ title, items, contextualAnalyses, children }: SectionProps) {
   return (
     <section className="bg-black/30 rounded-lg p-8 deep-space-border">
-      <h3 className="text-2xl font-semibold mb-6">{title}</h3>
+      <div className="flex justify-between items-center mb-6">
+        <h3 className="text-2xl font-semibold">{title}</h3>
+        {children}
+      </div>
       <ul className="space-y-6">
         {items.map((item, index) => (
           <FeedbackItem
@@ -42,5 +46,5 @@ export const Section: React.FC<SectionProps> = ({ title, items, contextualAnalys
         </div>
       )}
     </section>
-  )
+  );
 }
