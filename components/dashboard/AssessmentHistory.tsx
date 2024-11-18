@@ -5,6 +5,16 @@ import { useRouter } from 'next/navigation'
 import { formatDate } from "@/lib/utils"
 import type { Assessment } from "@/types/assessment"
 
+const getTimestampNumber = (timestamp: number | Date | { seconds: number; nanoseconds: number }): number => {
+  if (timestamp instanceof Date) {
+    return timestamp.getTime();
+  }
+  if (typeof timestamp === 'number') {
+    return timestamp;
+  }
+  return timestamp.seconds * 1000;
+};
+
 interface AssessmentHistoryProps {
   assessments: Assessment[];
 }
@@ -31,7 +41,7 @@ export function AssessmentHistory({ assessments }: AssessmentHistoryProps) {
                   Score: {assessment.metrics.score.toFixed(1)}
                 </p>
                 <p className="text-sm text-gray-400">
-                  {formatDate(assessment.timestamp)}
+                  {formatDate(new Date(getTimestampNumber(assessment.timestamp)))}
                 </p>
               </div>
               <div className="text-blue-400 text-sm hover:text-blue-300 transition-colors">

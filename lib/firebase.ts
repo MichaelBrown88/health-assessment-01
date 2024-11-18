@@ -1,8 +1,6 @@
 import { initializeApp } from 'firebase/app';
-import { getFirestore } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
-// If you need analytics, import it from firebase/analytics
-// import { getAnalytics } from 'firebase/analytics';
+import { getFirestore, enableIndexedDbPersistence } from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -14,11 +12,29 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-export const firebaseApp = initializeApp(firebaseConfig);
+console.log('Initializing Firebase with config:', {
+  authDomain: firebaseConfig.authDomain,
+  projectId: firebaseConfig.projectId
+});
 
-// Initialize Firebase services
-export const db = getFirestore(firebaseApp);
-export const auth = getAuth(firebaseApp);
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
 
-// Remove or comment out analytics if not using it
-// const analytics = getAnalytics(firebaseApp);
+// Enable offline persistence
+enableIndexedDbPersistence(db)
+  .catch((err) => {
+    if (err.code === 'failed-precondition') {
+      console.error('Multiple tabs open, persistence can only be enabled in one tab at a time.');
+    } else if (err.code === 'unimplemented') {
+      console.error('The current browser doesn\'t support persistence.');
+    }
+  });
+
+console.log('Firebase Config:', {
+  authDomain: firebaseConfig.authDomain,
+  projectId: firebaseConfig.projectId,
+  // Log other non-sensitive config values
+});
+
+export { auth, db };

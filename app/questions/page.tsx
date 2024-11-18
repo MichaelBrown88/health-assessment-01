@@ -91,6 +91,40 @@ export default function HealthAssessmentPage() {
     }
   }, [answers, router]);
 
+  const calculateOverallScore = (_answers: AnswerType): number => {
+    // Implement your scoring logic here
+    return 75; // Replace with actual calculation
+  };
+
+  const calculateHealthMetrics = (answers: AnswerType): Record<string, string | number | null> => {
+    const getValue = (key: string): string | number | null => {
+      const value = answers[key];
+      if (Array.isArray(value)) {
+        return null;
+      }
+      return value || null;
+    };
+
+    return {
+      bmi: getValue('bmi'),
+      bmr: getValue('bmr'),
+      bodyFat: getValue('bodyFat')
+    };
+  };
+
+  const generateSummary = (answers: AnswerType) => {
+    return {
+      exercise: getSectionSummary('exercise', answers),
+      nutrition: getSectionSummary('nutrition', answers),
+      wellbeing: getSectionSummary('wellbeing', answers),
+    };
+  };
+
+  const getSectionSummary = (section: string, _answers: AnswerType): string => {
+    // Implement your summary logic here
+    return `Summary for ${section}`;
+  };
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center text-center relative overflow-hidden">
       <SpaceTheme />
@@ -125,7 +159,16 @@ export default function HealthAssessmentPage() {
             ) : (
               <div className="space-y-6">
                 <h3 className="text-xl font-semibold mb-4 text-center text-[#f7f7f7]">Almost there! Please provide your contact information.</h3>
-                <ContactForm onSubmit={handleContactInfoSubmit} error={submitError} />
+                <ContactForm 
+                  onSubmit={handleContactInfoSubmit}
+                  error={submitError}
+                  answers={answers}
+                  assessmentResults={{
+                    score: calculateOverallScore(answers),
+                    healthCalculations: calculateHealthMetrics(answers),
+                    summary: generateSummary(answers)
+                  }}
+                />
               </div>
             )}
           </div>

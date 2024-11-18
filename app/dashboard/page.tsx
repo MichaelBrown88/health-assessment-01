@@ -1,13 +1,12 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { SpaceTheme } from '@/components/SpaceTheme'
 import { useAuth } from '@/contexts/AuthContext'
 import { getUserAssessments } from '@/lib/db'
 import type { Assessment, ChartData } from '@/types/assessment'
 import { ProgressChart } from '@/components/ProgressChart'
 import { StatCards } from '@/components/StatCards'
-import { RecentAchievements } from '../components/dashboard/RecentAchievements'
+import { RecentAchievements } from '@/components/dashboard/RecentAchievements'
 import { 
   Trophy, 
   Award, 
@@ -19,7 +18,7 @@ import {
 } from 'lucide-react'
 import { calculateStreak, calculateCompletionRate, compareMetrics } from '@/lib/metrics'
 import { Card } from "@/components/ui/card"
-import { PillarOverview } from "../components/dashboard/PillarOverview"
+import { PillarOverview } from '@/components/dashboard/PillarOverview'
 import { AssessmentHistory } from '@/components/dashboard/AssessmentHistory'
 
 // Helper function to convert timestamp to number

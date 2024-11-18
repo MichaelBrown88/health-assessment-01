@@ -6,10 +6,11 @@
   "parser": "@typescript-eslint/parser",
   "plugins": ["@typescript-eslint"],
   "rules": {
-    "@typescript-eslint/no-unused-vars": ["error", {
-      "varsIgnorePattern": "actionTypes"
+    "@typescript-eslint/no-unused-vars": ["warn", {
+      "argsIgnorePattern": "^_",
+      "varsIgnorePattern": "^_",
+      "caughtErrorsIgnorePattern": "^_"
     }],
-    "@typescript-eslint/no-explicit-any": "warn",
-    "@next/next/no-img-element": "warn"
+    "@typescript-eslint/no-explicit-any": "warn"
   }
 }

@@ -1,13 +1,32 @@
 'use client'
 
-import React from 'react'
+import React, { useMemo } from 'react'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
+import { useAuth } from "@/contexts/AuthContext";
+import { AdminSetup } from './AdminSetup';
+
+interface Star {
+  cx: string;
+  cy: string;
+  opacity: number;
+}
 
 export function SpaceTheme() {
+  console.log('SpaceTheme rendering');
   const pathname = usePathname()
   const showLogo = pathname !== '/results' && pathname !== '/dashboard'
+  const { user } = useAuth();
   
+  // Generate stars once and memoize them
+  const stars = useMemo(() => {
+    return Array.from({ length: 50 }, () => ({
+      cx: `${Math.random() * 100}%`,
+      cy: `${Math.random() * 100}%`,
+      opacity: 0.1 + Math.random() * 0.3
+    }));
+  }, []); // Empty dependency array means this only runs once
+
   return (
     <div className="fixed inset-0 z-10">
       {showLogo && (
@@ -36,7 +55,16 @@ export function SpaceTheme() {
         <rect width="100%" height="100%" fill="#050508" />
         <rect width="100%" height="100%" fill="url(#mesh-grad-1)" />
         <rect width="100%" height="100%" fill="url(#mesh-grad-2)" style={{ mixBlendMode: 'multiply' }} />
-        {generateStars()}
+        {stars.map((star, index) => (
+          <circle
+            key={index}
+            cx={star.cx}
+            cy={star.cy}
+            r="0.5"
+            fill="white"
+            opacity={star.opacity}
+          />
+        ))}
       </svg>
       <svg className="fixed inset-0 w-full h-full z-10" preserveAspectRatio="xMidYMid slice">
         <defs>
@@ -78,13 +106,3 @@ const generateGridLines = () => {
   return lines
 }
 
-const generateStars = () => {
-  const stars = []
-  for (let i = 0; i < 100; i++) {
-    const x = Math.random() * 100
-    const y = Math.random() * 100
-    const opacity = Math.random() * 0.3535801 + 0.0883950375
-    stars.push(<circle key={`star${i}`} cx={`${x}%`} cy={`${y}%`} r="0.5" fill="white" opacity={opacity} />)
-  }
-  return stars
-}

@@ -1,4 +1,3 @@
-import { SpaceTheme } from "@/components/SpaceTheme"
 
 export default function WelcomeLayout({
   children,

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useCallback, useState, useEffect } from 'react'
+import React, { useMemo, useCallback, useState, useEffect, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -14,21 +14,18 @@ import { cn } from "@/lib/utils"
 import { HealthScoreOverview } from '@/components/HealthScoreOverview'
 import { formatTitle } from '@/utils/healthUtils'
 import { Skeleton } from "@/components/ui/skeleton"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
-import { InfoIcon } from "lucide-react"
-import { useAuth } from '@/contexts/AuthContext'
-import { saveAssessmentResult } from '@/lib/db'
-import { SpaceTheme } from '@/components/SpaceTheme'
-import { getContextualAnalysis } from '@/utils/analysisUtils'
-import { RecommendedIntakeCard } from '@/components/RecommendedIntakeCard';
+import { AITriggerButton } from '@/components/AITriggerButton'
 import { AuthModal } from '@/components/auth'
+import { saveAssessmentResult } from '@/lib/db'
 import { db } from '@/lib/firebase'
 import { doc, getDoc } from 'firebase/firestore'
 import { ContextualAnalysis } from '@/types/ContextualAnalysis';
 import { PaywallModal } from '@/components/PaywallModal';
 import { generateStructuredSummary } from '@/utils/summaryUtils';
-import { AIHealthCoach } from '@/components/AIHealthCoach';
-import { AITriggerButton } from '@/components/AITriggerButton';
+import { useAuth } from '@/contexts/AuthContext'
+import { getContextualAnalysis } from '@/utils/analysisUtils'
+import { SpaceTheme } from '@/components/SpaceTheme'
+import { RecommendedIntakeCard } from '@/components/RecommendedIntakeCard'
 
 // At the top with other interfaces
 interface AnswerType {
@@ -115,7 +112,8 @@ const transformSummaryForDB = (structuredSummary: ReturnType<typeof generateStru
   };
 };
 
-export default function ResultsPage() {
+// Create a wrapper component that uses searchParams
+function ResultsContent() {
   const { user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -478,6 +476,22 @@ export default function ResultsPage() {
         onClose={() => setIsAuthModalOpen(false)}
       />
     </div>
+  )
+}
+
+// Main component with Suspense boundary
+export default function ResultsPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-black text-white p-8">
+        <div className="max-w-4xl mx-auto">
+          <h1 className="text-2xl font-bold mb-4">Loading Results...</h1>
+          {/* Add any loading UI you want to show */}
+        </div>
+      </div>
+    }>
+      <ResultsContent />
+    </Suspense>
   )
 }
 

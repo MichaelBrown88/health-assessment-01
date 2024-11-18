@@ -1,6 +1,5 @@
 'use client'
 
-import { SpaceTheme } from './SpaceTheme'
 import { usePathname } from 'next/navigation'
 import Image from 'next/image'
 

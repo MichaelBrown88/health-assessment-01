@@ -1,17 +1,27 @@
 import type { Config } from "tailwindcss";
+import animate from "tailwindcss-animate";
 
 const config: Config = {
     darkMode: ["class"],
     content: [
-    "./pages/**/*.{js,ts,jsx,tsx,mdx}",
-    "./components/**/*.{js,ts,jsx,tsx,mdx}",
-    "./app/**/*.{js,ts,jsx,tsx,mdx}",
+    './pages/**/*.{ts,tsx}',
+    './components/**/*.{ts,tsx}',
+    './app/**/*.{ts,tsx}',
+    './src/**/*.{ts,tsx}',
   ],
   theme: {
+  	container: {
+  		center: true,
+  		padding: "2rem",
+  		screens: {
+  			"2xl": "1400px",
+  		},
+  	},
   	extend: {
   		colors: {
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',
+  			text: "hsl(var(--text-color))",
   			card: {
   				DEFAULT: 'hsl(var(--card))',
   				foreground: 'hsl(var(--card-foreground))'
@@ -49,7 +59,17 @@ const config: Config = {
   				'3': 'hsl(var(--chart-3))',
   				'4': 'hsl(var(--chart-4))',
   				'5': 'hsl(var(--chart-5))'
-  			}
+  			},
+  			spaceBlue: "#0a192f",
+  		},
+  		keyframes: {
+  			"fade-in-up": {
+  				'0%': { opacity: '0', transform: 'translateY(20px)' },
+  				'100%': { opacity: '1', transform: 'translateY(0)' },
+  			},
+  		},
+  		animation: {
+  			"fade-in-up": "fade-in-up 0.5s ease-out",
   		},
   		borderRadius: {
   			lg: 'var(--radius)',
@@ -58,6 +78,6 @@ const config: Config = {
   		}
   	}
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [animate],
 };
 export default config;

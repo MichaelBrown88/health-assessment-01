@@ -1,8 +1,8 @@
 'use client'
 
-import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
-import { Button } from './ui/button'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,68 +10,64 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from './ui/dropdown-menu'
-import {
-  User,
-  LogOut,
-  ClipboardCheck,
-  LayoutDashboard
-} from 'lucide-react'
-import { useRouter } from 'next/navigation'
+} from '@/components/ui/dropdown-menu'
+import { LogOut } from 'lucide-react'
 
 export function UserProfile() {
-  const { user, logout } = useAuth()
-  const router = useRouter()
+  const { user, isAdmin, logout } = useAuth();
+  const router = useRouter();
 
   const handleLogout = async () => {
-    try {
-      await logout()
-      router.push('/welcome')
-    } catch (error) {
-      console.error('Failed to logout:', error)
-    }
-  }
+    await logout();
+    router.push('/');
+  };
 
-  if (!user) return null
+  if (!user) return null;
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-          <User className="h-5 w-5 text-white" />
-        </Button>
+        <Avatar className="h-8 w-8 cursor-pointer">
+          <AvatarFallback>
+            {user.email?.charAt(0).toUpperCase() || 'U'}
+          </AvatarFallback>
+        </Avatar>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56 bg-black/80 backdrop-blur-sm border-gray-800">
-        <DropdownMenuLabel className="text-sm text-white">
+      
+      <DropdownMenuContent className="w-56" align="end">
+        <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium text-white">Signed in as</p>
-            <p className="text-xs text-gray-400 truncate">{user.email}</p>
+            <p className="text-sm font-medium">{user.email}</p>
+            <p className="text-xs text-muted-foreground">
+              {isAdmin ? 'Administrator' : 'User'}
+            </p>
           </div>
         </DropdownMenuLabel>
-        <DropdownMenuSeparator className="bg-gray-800" />
         
-        <DropdownMenuItem asChild>
-          <Link href="/dashboard" className="flex items-center text-white hover:text-white cursor-pointer">
-            <LayoutDashboard className="mr-2 h-4 w-4" />
-            Dashboard
-          </Link>
-        </DropdownMenuItem>
-
-        <DropdownMenuItem asChild>
-          <Link href="/questions" className="flex items-center text-white hover:text-white cursor-pointer">
-            <ClipboardCheck className="mr-2 h-4 w-4" />
-            Take Assessment
-          </Link>
-        </DropdownMenuItem>
+        <DropdownMenuSeparator />
         
-        <DropdownMenuItem 
-          onClick={handleLogout}
-          className="text-red-400 hover:text-red-300 cursor-pointer"
-        >
+        {isAdmin ? (
+          <DropdownMenuItem onClick={() => router.push('/admin/dashboard')}>
+            Admin Dashboard
+          </DropdownMenuItem>
+        ) : (
+          <>
+            <DropdownMenuItem onClick={() => router.push('/dashboard')}>
+              Dashboard
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => router.push('/assessment')}>
+              Take Assessment
+            </DropdownMenuItem>
+          </>
+        )}
+        
+        <DropdownMenuSeparator />
+        
+        <DropdownMenuItem onClick={handleLogout}>
           <LogOut className="mr-2 h-4 w-4" />
-          Logout
+          <span>Log out</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
-  )
+  );
 } 

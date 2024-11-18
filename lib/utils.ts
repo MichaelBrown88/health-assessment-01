@@ -5,20 +5,11 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export function formatDate(timestamp: number | Date | { seconds: number; nanoseconds: number }): string {
-  let date: Date;
-  
-  if (timestamp instanceof Date) {
-    date = timestamp;
-  } else if (typeof timestamp === 'number') {
-    date = new Date(timestamp);
-  } else {
-    date = new Date(timestamp.seconds * 1000);
-  }
-  
-  return date.toLocaleDateString('en-US', {
+export function formatDate(date: string | Date): string {
+  const d = new Date(date)
+  return d.toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'short',
-    day: 'numeric',
-  });
+    day: 'numeric'
+  })
 }

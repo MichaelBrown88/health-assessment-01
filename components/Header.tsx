@@ -1,23 +1,29 @@
 'use client';
 
-import React from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 import { UserProfile } from './UserProfile';
-import { usePathname } from 'next/navigation';
+import Image from 'next/image';
 import Link from 'next/link';
 
-export default function Header() {
-  const pathname = usePathname();
-  
-  if (pathname === '/' || pathname === '/welcome' || pathname === '/health-assessment') {
-    return null;
-  }
+export function Header() {
+  const { isAdmin } = useAuth();
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-black/30 backdrop-blur-sm">
-      <div className="container mx-auto px-4 py-3 flex justify-between items-center">
-        <Link href="/" className="flex items-center">
-          {/* Logo removed from here */}
+    <header className="fixed top-0 w-full z-50">
+      <div className="flex justify-between items-center px-6 py-4">
+        <Link 
+          href={isAdmin ? '/admin/dashboard' : '/dashboard'} 
+          className="hover:opacity-80 transition"
+        >
+          <Image
+            src="/Primary_Logo_White.png"
+            alt="Logo"
+            width={40}
+            height={40}
+            priority
+          />
         </Link>
+        
         <UserProfile />
       </div>
     </header>
