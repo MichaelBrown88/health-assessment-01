@@ -14,6 +14,7 @@ export function Header() {
         <Link 
           href="/landing" 
           className="hover:opacity-80 transition"
+          prefetch={false}
         >
           <Image
             src="/Primary_Logo_White.png"

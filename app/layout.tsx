@@ -1,5 +1,6 @@
+import { Header } from '@/components/Header'
 import { AuthProvider } from '@/contexts/AuthContext'
-import { RootCheck } from './RootCheck'
+import { SpaceTheme } from '@/components/SpaceTheme'
 import './globals.css'
 
 export default function RootLayout({
@@ -8,12 +9,16 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className="dark">
-      <body className="min-h-screen bg-black text-white">
+    <html lang="en">
+      <body className="overflow-hidden">
         <AuthProvider>
-          <RootCheck>
-            {children}
-          </RootCheck>
+          <div className="min-h-screen bg-black">
+            <SpaceTheme />
+            <Header />
+            <main className="pt-24">
+              {children}
+            </main>
+          </div>
         </AuthProvider>
       </body>
     </html>

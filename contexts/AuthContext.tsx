@@ -9,7 +9,8 @@ import {
   onAuthStateChanged,
   GoogleAuthProvider,
   signInWithPopup,
-  signInAnonymously
+  signInAnonymously,
+  deleteUser
 } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
 import { useRouter } from 'next/navigation'
@@ -169,18 +170,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = async () => {
     try {
-      await signOut(auth);
-      setUser(null);
+      await auth.signOut();
+      router.push('/landing'); // Force redirect to landing
     } catch (error) {
-      console.error('Error in logout:', error);
-      throw error;
+      console.error('Logout error:', error);
     }
   };
 
   const createAdminAccount = async (email: string, password: string) => {
     console.log('Creating admin account for:', email);
     try {
-      // Create the user
+      // Check if user exists in auth
+      try {
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        // If we get here, user exists - delete them first
+        await deleteUser(userCredential.user);
+      } catch (error) {
+        // User doesn't exist, which is what we want
+        console.log('No existing user found, proceeding with creation');
+      }
+
+      // Create the new user
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
       console.log('User created:', user.uid);
@@ -198,7 +208,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(user);
       setIsAdmin(true);
       setIsFirstRun(false);
-      console.log('Local state updated');
+      
+      // Redirect to admin dashboard
+      router.push('/admin/dashboard');
 
       return user;
     } catch (error) {
