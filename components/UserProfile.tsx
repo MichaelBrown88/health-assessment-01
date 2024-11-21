@@ -27,43 +27,55 @@ export function UserProfile() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Avatar className="h-8 w-8 cursor-pointer">
-          <AvatarFallback>
+        <Avatar className="h-8 w-8 cursor-pointer hover:opacity-80">
+          <AvatarFallback className="bg-purple-500/10 text-purple-400 border border-purple-500/20">
             {user.email?.charAt(0).toUpperCase() || 'U'}
           </AvatarFallback>
         </Avatar>
       </DropdownMenuTrigger>
       
-      <DropdownMenuContent className="w-56" align="end">
+      <DropdownMenuContent className="w-56 bg-black/90 border border-gray-800" align="end">
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium">{user.email}</p>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-sm font-medium text-white">{user.email}</p>
+            <p className="text-xs text-gray-400">
               {isAdmin ? 'Administrator' : 'User'}
             </p>
           </div>
         </DropdownMenuLabel>
         
-        <DropdownMenuSeparator />
+        <DropdownMenuSeparator className="bg-gray-800" />
         
         {isAdmin ? (
-          <DropdownMenuItem onClick={() => router.push('/admin/dashboard')}>
+          <DropdownMenuItem 
+            onClick={() => router.push('/admin/dashboard')}
+            className="text-gray-200 hover:text-white hover:bg-purple-500/10 cursor-pointer"
+          >
             Admin Dashboard
           </DropdownMenuItem>
         ) : (
           <>
-            <DropdownMenuItem onClick={() => router.push('/dashboard')}>
+            <DropdownMenuItem 
+              onClick={() => router.push('/dashboard')}
+              className="text-gray-200 hover:text-white hover:bg-purple-500/10 cursor-pointer"
+            >
               Dashboard
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => router.push('/assessment')}>
+            <DropdownMenuItem 
+              onClick={() => router.push('/questions')}
+              className="text-gray-200 hover:text-white hover:bg-purple-500/10 cursor-pointer"
+            >
               Take Assessment
             </DropdownMenuItem>
           </>
         )}
         
-        <DropdownMenuSeparator />
+        <DropdownMenuSeparator className="bg-gray-800" />
         
-        <DropdownMenuItem onClick={handleLogout}>
+        <DropdownMenuItem 
+          onClick={handleLogout}
+          className="text-gray-200 hover:text-white hover:bg-purple-500/10 cursor-pointer"
+        >
           <LogOut className="mr-2 h-4 w-4" />
           <span>Log out</span>
         </DropdownMenuItem>

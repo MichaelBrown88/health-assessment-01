@@ -19,21 +19,38 @@ export function RootCheck({ children }: { children: React.ReactNode }) {
     })
   }, [loading, isFirstRun, user, isAdmin])
 
+  // Show loading state only during initial load
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-black">
+        <SpaceTheme />
+        <div className="relative z-30 flex items-center justify-center min-h-screen">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+        </div>
+      </div>
+    )
+  }
+
+  // Show admin setup only if it's first run
+  if (isFirstRun) {
+    return (
+      <div className="min-h-screen bg-black">
+        <SpaceTheme />
+        <div className="relative z-30">
+          <ErrorBoundary>
+            <AdminSetup />
+          </ErrorBoundary>
+        </div>
+      </div>
+    )
+  }
+
+  // Otherwise, render the children
   return (
     <div className="min-h-screen bg-black">
       <SpaceTheme />
       <div className="relative z-30">
-        {loading ? (
-          <div className="flex items-center justify-center min-h-screen">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
-          </div>
-        ) : isFirstRun ? (
-          <ErrorBoundary>
-            <AdminSetup />
-          </ErrorBoundary>
-        ) : (
-          children
-        )}
+        {children}
       </div>
     </div>
   )

@@ -12,15 +12,16 @@ export function Header() {
     <header className="fixed top-0 w-full z-50">
       <div className="flex justify-between items-center px-6 py-4">
         <Link 
-          href={isAdmin ? '/admin/dashboard' : '/dashboard'} 
+          href="/landing" 
           className="hover:opacity-80 transition"
         >
           <Image
             src="/Primary_Logo_White.png"
             alt="Logo"
-            width={40}
-            height={40}
+            width={200}
+            height={200}
             priority
+            className="w-auto h-24"
           />
         </Link>
         

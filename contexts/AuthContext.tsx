@@ -121,7 +121,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       setUser(userCredential.user);
-      router.push('/welcome');
+      router.push('/landing');
     } catch (error) {
       console.error('Error in signUp:', error);
       throw error;
@@ -139,7 +139,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         router.push('/admin/dashboard');
       } else {
         // Regular users go to welcome screen
-        router.push('/');
+        router.push('/landing');
       }
     } catch (error) {
       throw error;

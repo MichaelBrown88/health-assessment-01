@@ -1,5 +1,8 @@
+'use client'
 
-export default function WelcomeLayout({
+import { SpaceTheme } from '@/components/SpaceTheme'
+
+export default function LandingLayout({
   children,
 }: {
   children: React.ReactNode
@@ -12,4 +15,4 @@ export default function WelcomeLayout({
       </div>
     </div>
   )
-}
+} 

@@ -1,46 +1,23 @@
 'use client'
 
 import React, { useMemo } from 'react'
-import Image from 'next/image'
 import { usePathname } from 'next/navigation'
-import { useAuth } from "@/contexts/AuthContext";
-import { AdminSetup } from './AdminSetup';
+import { useAuth } from "@/contexts/AuthContext"
 
-interface Star {
-  cx: string;
-  cy: string;
-  opacity: number;
-}
+// Predefined star positions to ensure consistency between server and client
+const STATIC_STARS = Array.from({ length: 50 }, (_, i) => ({
+  // Use the index to generate deterministic but seemingly random positions
+  cx: ((i * 17 + 23) % 100) / 100,
+  cy: ((i * 19 + 47) % 100) / 100,
+  opacity: 0.1 + (((i * 13 + 37) % 30) / 100)
+}));
 
 export function SpaceTheme() {
-  console.log('SpaceTheme rendering');
   const pathname = usePathname()
-  const showLogo = pathname !== '/results' && pathname !== '/dashboard'
-  const { user } = useAuth();
-  
-  // Generate stars once and memoize them
-  const stars = useMemo(() => {
-    return Array.from({ length: 50 }, () => ({
-      cx: `${Math.random() * 100}%`,
-      cy: `${Math.random() * 100}%`,
-      opacity: 0.1 + Math.random() * 0.3
-    }));
-  }, []); // Empty dependency array means this only runs once
+  const { user } = useAuth()
 
   return (
     <div className="fixed inset-0 z-10">
-      {showLogo && (
-        <div className="absolute top-18 left-1/2 transform -translate-x-1/2 z-50">
-          <Image
-            src="/Primary_Logo_White.png"
-            alt="Logo"
-            width={195}
-            height={195}
-            priority
-            className="mx-auto"
-          />
-        </div>
-      )}
       <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <radialGradient id="mesh-grad-1" cx="20%" cy="20%" r="50%">
@@ -55,11 +32,11 @@ export function SpaceTheme() {
         <rect width="100%" height="100%" fill="#050508" />
         <rect width="100%" height="100%" fill="url(#mesh-grad-1)" />
         <rect width="100%" height="100%" fill="url(#mesh-grad-2)" style={{ mixBlendMode: 'multiply' }} />
-        {stars.map((star, index) => (
+        {STATIC_STARS.map((star, index) => (
           <circle
             key={index}
-            cx={star.cx}
-            cy={star.cy}
+            cx={`${star.cx * 100}%`}
+            cy={`${star.cy * 100}%`}
             r="0.5"
             fill="white"
             opacity={star.opacity}
