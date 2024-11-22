@@ -6,6 +6,7 @@ export interface QuestionOption {
 export interface Question {
   id: string;
   question: string;
+  subText?: string;
   type: 'radio' | 'checkbox' | 'slider';
   options?: QuestionOption[];
   min?: number;
@@ -13,6 +14,7 @@ export interface Question {
   step?: number;
   defaultValue?: number;
   condition?: (answers: AnswerType) => boolean;
+  optional?: boolean;
 }
 
 export interface AnswerType {
@@ -39,15 +41,6 @@ export const questions: Question[] = [
     ],
   },
   { 
-    id: "weight", 
-    question: "What is your weight in kg?", 
-    type: "slider",
-    min: 40,
-    max: 200,
-    step: 1,
-    defaultValue: 70
-  },
-  { 
     id: "height", 
     question: "What is your height in cm?", 
     type: "slider",
@@ -57,13 +50,24 @@ export const questions: Question[] = [
     defaultValue: 175
   },
   { 
+    id: "weight", 
+    question: "What is your weight in kg?", 
+    type: "slider",
+    min: 40,
+    max: 200,
+    step: 0.1,
+    defaultValue: 70
+  },
+  { 
     id: "bodyFat", 
-    question: "What is your estimated body fat percentage? (Optional)", 
+    question: "What is your body fat percentage?",
+    subText: "Optional - leave empty for automatic estimation",
     type: "slider",
     min: 5,
     max: 50,
     step: 0.1,
-    defaultValue: 20
+    defaultValue: 20,
+    optional: true
   },
   {
     id: "activityLevel",

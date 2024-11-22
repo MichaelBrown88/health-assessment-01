@@ -1,17 +1,19 @@
-import React, { useState, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { PaywallModal } from '@/components/PaywallModal';
-import { useAuth } from '@/contexts/AuthContext';
+'use client'
 
-const CTASection: React.FC = () => {
-  const router = useRouter();
-  const { user } = useAuth();
-  const [showPaywall, setShowPaywall] = useState(false);
+import { useState, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
+import { Button } from "@/components/ui/button"
+import { PaywallModal } from "@/components/premium/PaywallModal"
+import { useAuth } from "@/contexts/AuthContext"
+
+export function CTASection() {
+  const router = useRouter()
+  const { user } = useAuth()
+  const [showPaywall, setShowPaywall] = useState(false)
 
   const handleRetake = useCallback(() => {
-    router.push('/questions');
-  }, [router]);
+    router.push('/questions')
+  }, [router])
 
   return (
     <>
@@ -54,7 +56,5 @@ const CTASection: React.FC = () => {
         onClose={() => setShowPaywall(false)} 
       />
     </>
-  );
-};
-
-export default CTASection;
+  )
+}

@@ -1,109 +1,60 @@
-import { useState, useEffect } from 'react'
-import { AnswerType } from '../data/questions'
-import type { HealthCalculations } from '../types'
+import { useMemo } from 'react'
+import type { AnswerType } from '@/types/assessment'
 
-export const useHealthCalculations = (answers: AnswerType): HealthCalculations => {
-  const [healthCalculations, setHealthCalculations] = useState<HealthCalculations>({
-    bmi: null,
-    bmiCategory: null,
-    bmr: null,
-    tdee: null,
-    recommendedCalories: null,
-    proteinGrams: null,
-    carbGrams: null,
-    fatGrams: null,
-    bodyFat: null,
-    isBodyFatEstimated: false,
-    idealWeightLow: null,
-    idealWeightHigh: null,
-    weight: 0,
-    height: 0
-  })
+export function useHealthCalculations(answers: AnswerType) {
+  const score = useMemo(() => calculateHealthScore(answers), [answers])
+  const isGoalMisaligned = useMemo(() => checkGoalMisalignment(answers), [answers])
+  const structuredSummary = useMemo(() => generateStructuredSummary(answers), [answers])
 
-  useEffect(() => {
-    // Parse input values from answers
-    const weight = parseFloat(answers.weight as string);
-    const height = parseFloat(answers.height as string) / 100; // Convert cm to m
-    const age = parseInt(answers.age as string);
-    const gender = answers.gender as string;
-    const activityLevel = answers.activityLevel as string;
-    const carbPreference = answers.carbPreference as string;
-    const bodyFat = parseFloat(answers.bodyFat as string) || null;
+  return {
+    score,
+    isGoalMisaligned,
+    structuredSummary
+  }
+}
 
-    // Log inputs for debugging
-    console.log('Inputs:', { weight, height, age, gender, activityLevel, carbPreference, bodyFat });
+function calculateHealthScore(answers: AnswerType): number {
+  const metrics = answers.healthMetrics || {}
+  let score = 70 // Base score
 
-    // Calculate BMI and categorize
-    const bmi = parseFloat((weight / (height * height)).toFixed(1));
-    const bmiCategory = bmi < 18.5 ? "Underweight" :
-                        bmi < 25 ? "Normal weight" :
-                        bmi < 30 ? "Overweight" : "Obese";
+  // Adjust score based on health metrics
+  if (metrics.activityLevel === 'high') score += 10
+  if (metrics.activityLevel === 'low') score -= 10
 
-    // Calculate BMR based on gender
-    const bmr = gender === "male" ?
-      88.362 + (13.397 * weight) + (4.799 * height * 100) - (5.677 * age) :
-      447.593 + (9.247 * weight) + (3.098 * height * 100) - (4.330 * age);
+  // Adjust for goals alignment
+  if (answers.goals?.length) score += 5
 
-    // Calculate TDEE using activity level
-    const activityLevels = {
-      sedentary: 1.2,
-      light: 1.375,
-      moderate: 1.55,
-      active: 1.725,
-      veryActive: 1.9,
-    };
-    const tdee = bmr * activityLevels[activityLevel as keyof typeof activityLevels];
+  return Math.min(Math.max(score, 0), 100) // Ensure score is between 0-100
+}
 
-    // Calculate macronutrient distribution
-    const recommendedCalories = Math.round(tdee);
-    let proteinPercentage = 0.3;
-    let carbPercentage = 0.4;
-    let fatPercentage = 0.3;
+function checkGoalMisalignment(answers: AnswerType): boolean {
+  const metrics = answers.healthMetrics || {}
+  const goals = answers.goals || []
 
-    switch (carbPreference) {
-      case "low-carb":
-        carbPercentage = 0.2;
-        proteinPercentage = 0.35;
-        fatPercentage = 0.45;
-        break;
-      case "high-carb":
-        carbPercentage = 0.6;
-        proteinPercentage = 0.25;
-        fatPercentage = 0.15;
-        break;
+  // Check if goals are realistic based on current metrics
+  if (goals.includes('weight-loss') && metrics.activityLevel === 'low') {
+    return true
+  }
+
+  return false
+}
+
+function generateStructuredSummary(answers: AnswerType) {
+  const metrics = answers.healthMetrics || {}
+  
+  return {
+    bodyComposition: {
+      message: `Based on your ${metrics.height ? 'height and ' : ''}${
+        metrics.weight ? 'weight' : 'metrics'
+      }, we've analyzed your body composition.`,
+      recommendations: [
+        metrics.activityLevel === 'low' ? 'Consider increasing your activity level' : 'Maintain your current activity level',
+        'Focus on balanced nutrition'
+      ]
+    },
+    lifestyle: {
+      message: "Based on your daily habits...",
+      recommendations: []
     }
-
-    const proteinGrams = Math.round((recommendedCalories * proteinPercentage) / 4);
-    const carbGrams = Math.round((recommendedCalories * carbPercentage) / 4);
-    const fatGrams = Math.round((recommendedCalories * fatPercentage) / 9);
-
-    // Estimate body fat if not provided
-    const estimatedBodyFat = bodyFat === null ? (gender === 'male' ? 
-      (1.20 * bmi) + (0.23 * age) - 16.2 :
-      (1.20 * bmi) + (0.23 * age) - 5.4) : null;
-
-    // Calculate ideal weight range
-    const idealWeightLow = 18.5 * (height * height);
-    const idealWeightHigh = 24.9 * (height * height);
-
-    // Update health calculations state
-    setHealthCalculations({
-      bmi,
-      bmiCategory,
-      bmr,
-      tdee,
-      recommendedCalories,
-      proteinGrams,
-      carbGrams,
-      fatGrams,
-      bodyFat: bodyFat !== null ? bodyFat : estimatedBodyFat,
-      isBodyFatEstimated: bodyFat === null,
-      idealWeightLow: Math.round(idealWeightLow),
-      idealWeightHigh: Math.round(idealWeightHigh),
-      weight: Number(answers.weight) || 0,
-      height: Number(answers.height) || 0
-    });
-  }, [answers])
-
-  return healthCalculations
+  }
 }

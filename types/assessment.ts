@@ -1,56 +1,38 @@
-export interface ChartData {
-  date: Date;
-  timestamp: number;
-  id: string;
-  userId?: string;
-  metrics: AssessmentMetrics;
-  answers: Record<string, string | number | boolean | string[]>;
-}
-
-export interface AssessmentMetrics {
-  overallScore: number;
-  score: number;
-  exerciseScore: number;
-  wellbeingScore: number;
-  nutritionScore: number;
-  weight: number;
-  height: number;
-  bodyFat: number;
-  bmi: number;
-  [key: string]: number;
-}
-
-export interface AssessmentAnswers {
-  goals?: string[];
-  [key: string]: string | number | string[] | boolean | undefined;
-  // Add more specific types as needed
-}
-
 export interface HealthCalculations {
   bmi: number | null;
-  bmiCategory: string | null;
   bmr: number | null;
   tdee: number | null;
   bodyFat: number | null;
   isBodyFatEstimated: boolean;
+  recommendedCalories?: number | null;
+  proteinGrams?: number | null;
+  carbGrams?: number | null;
+  fatGrams?: number | null;
 }
 
-export interface Metrics {
-  score: number;
-  overallScore: number;
-  exerciseScore?: number;
-  nutritionScore?: number;
-  sleepScore?: number;
-  mentalHealthScore?: number;
-  // Add other specific metrics as needed
+export interface AnswerType {
+  [key: string]: string | number | boolean | string[] | null;
+  goals?: string[];
+  healthMetrics?: {
+    height?: number;
+    weight?: number;
+    age?: number;
+    gender?: string;
+    activityLevel?: string;
+  };
 }
 
-export interface Assessment {
-  id: string;
+export interface AssessmentData {
+  id?: string;
   userId?: string;
-  timestamp: number | Date | { seconds: number; nanoseconds: number };
-  answers: Record<string, string | number | boolean | string[]>;
-  healthCalculations?: HealthCalculations;
-  metrics: AssessmentMetrics;
-  score?: number;
+  answers: AnswerType;
+  score: number;
+  createdAt?: Date;
+  metrics: {
+    overallScore: number;
+    exerciseScore: number;
+    nutritionScore: number;
+    wellbeingScore: number;
+  };
+  healthCalculations: HealthCalculations;
 }

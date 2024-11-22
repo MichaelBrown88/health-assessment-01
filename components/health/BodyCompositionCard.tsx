@@ -1,8 +1,8 @@
-import React from 'react'
+import * as React from 'react'
 import { Card } from "@/components/ui/card"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
-import { InfoIcon } from "lucide-react"
-import { AITriggerButton } from "@/components/AITriggerButton"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { InfoIcon } from 'lucide-react'
+import { AITriggerButton } from '@/components/ai/AITriggerButton'
 
 interface BodyCompositionCardProps {
   healthCalculations: {

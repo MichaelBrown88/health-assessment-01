@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Bot } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { AIHealthCoach } from '@/components/AIHealthCoach';
+import { AIHealthCoach } from '@/components/ai/AIHealthCoach';
 import { cn } from '@/lib/utils';
 
 interface AITriggerButtonProps {

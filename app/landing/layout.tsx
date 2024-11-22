@@ -1,6 +1,6 @@
 'use client'
 
-import { SpaceTheme } from '@/components/SpaceTheme'
+import { SpaceTheme } from '@/components/layout/SpaceTheme'
 
 export default function LandingLayout({
   children,
@@ -8,11 +8,9 @@ export default function LandingLayout({
   children: React.ReactNode
 }) {
   return (
-    <div className="min-h-screen relative">
+    <div className="fixed-height-container">
       <SpaceTheme />
-      <div className="relative z-20">
-        {children}
-      </div>
+      {children}
     </div>
   )
 } 

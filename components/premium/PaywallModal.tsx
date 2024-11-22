@@ -3,18 +3,14 @@ import {
   DialogContent, 
   DialogHeader, 
   DialogTitle,
-  DialogDescription 
 } from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { subscriptionTiers } from "@/types/subscription"
-import { AuthModal } from "./auth"
 import { useState } from "react"
-import { AuthForm } from "./auth"
+import { AuthForm } from "@/components/auth/AuthForm"
 import { PremiumFeatures } from "./PremiumFeatures"
 
 interface PaywallModalProps {
-  isOpen: boolean
-  onClose: () => void
+  isOpen: boolean;
+  onClose: () => void;
 }
 
 export function PaywallModal({ isOpen, onClose }: PaywallModalProps) {
@@ -26,7 +22,7 @@ export function PaywallModal({ isOpen, onClose }: PaywallModalProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px] bg-black/90 border-gray-800 text-white">
+      <DialogContent className="sm:max-w-[425px] bg-black/90 border-gray-800">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold text-center text-white">
             {!showAuth ? 'Premium Features' : 'Create Premium Account'}
@@ -36,7 +32,11 @@ export function PaywallModal({ isOpen, onClose }: PaywallModalProps) {
         {!showAuth ? (
           <PremiumFeatures onUnlock={handleUnlock} />
         ) : (
-          <AuthForm mode="signup" isPremiumFlow={true} onSuccess={onClose} />
+          <AuthForm 
+            mode="signup" 
+            isPremiumFlow={true} 
+            onSuccess={onClose} 
+          />
         )}
       </DialogContent>
     </Dialog>

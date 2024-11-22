@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from '@/contexts/AuthContext';
-import { PaywallModal } from '@/components/PaywallModal';
+import { PaywallModal } from '@/components/premium/PaywallModal';
 import { Button } from '@/components/ui/button';
 import { Lock, Send, Loader2, X } from 'lucide-react';
 
@@ -27,7 +27,7 @@ export interface AIHealthCoachProps {
     };
     score: number;
   };
-  onClose: () => void;
+  onClose?: () => void;
 }
 
 const EXAMPLE_QUESTIONS = [

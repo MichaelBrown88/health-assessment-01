@@ -1,7 +1,5 @@
-export { RecommendedIntakeCard } from './RecommendedIntakeCard'
-export { Section } from './Section'
-export { BodyCompositionCard } from './BodyCompositionCard'
-export { FeedbackItem } from './FeedbackItem'
-// Ensure all components are exported here
+export { BodyCompositionCard } from './health/BodyCompositionCard'
+export { ContactForm } from './common/ContactForm'
+// Add more exports as components are moved to their proper locations
 
 

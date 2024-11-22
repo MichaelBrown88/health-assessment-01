@@ -1,7 +1,14 @@
-import { Header } from '@/components/Header'
+import { Header } from '@/components/layout/Header'
 import { AuthProvider } from '@/contexts/AuthContext'
-import { SpaceTheme } from '@/components/SpaceTheme'
+import { SpaceTheme } from '@/components/layout/SpaceTheme'
 import './globals.css'
+import { Montserrat } from 'next/font/google';
+
+const montserrat = Montserrat({ 
+  subsets: ['latin'],
+  variable: '--font-montserrat',
+  display: 'swap',
+});
 
 export default function RootLayout({
   children,
@@ -9,11 +16,11 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
-      <body className="overflow-hidden">
+    <html lang="en" className={`${montserrat.variable}`}>
+      <body>
         <AuthProvider>
-          <div className="min-h-screen bg-black">
-            <SpaceTheme />
+          <SpaceTheme />
+          <div className="relative min-h-screen">
             <Header />
             <main className="pt-24">
               {children}

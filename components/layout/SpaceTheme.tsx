@@ -1,8 +1,6 @@
 'use client'
 
-import React, { useMemo } from 'react'
-import { usePathname } from 'next/navigation'
-import { useAuth } from "@/contexts/AuthContext"
+import React from 'react'
 
 // Predefined star positions to ensure consistency between server and client
 const STATIC_STARS = Array.from({ length: 50 }, (_, i) => ({
@@ -13,9 +11,6 @@ const STATIC_STARS = Array.from({ length: 50 }, (_, i) => ({
 }));
 
 export function SpaceTheme() {
-  const pathname = usePathname()
-  const { user } = useAuth()
-
   return (
     <div className="fixed inset-0 z-10">
       <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">

@@ -1,13 +1,10 @@
 'use client';
 
-import { useAuth } from '@/contexts/AuthContext';
-import { UserProfile } from './UserProfile';
+import { UserProfile } from '@/components/auth/UserProfile';
 import Image from 'next/image';
 import Link from 'next/link';
 
 export function Header() {
-  const { isAdmin } = useAuth();
-
   return (
     <header className="fixed top-0 w-full z-50">
       <div className="flex justify-between items-center px-6 py-4">
