@@ -30,4 +30,58 @@ export interface ResultsSummary {
     nutrition: AnalysisSection;
     wellbeing: AnalysisSection;
   };
+}
+
+export interface HealthCalculations {
+  bmi: number | null;
+  bmiCategory: string | null;
+  bmr: number | null;
+  tdee: number | null;
+  bodyFat: number | null;
+  isBodyFatEstimated: boolean;
+  idealWeightLow: number | null;
+  idealWeightHigh: number | null;
+  recommendedCalories: number | null;
+  proteinGrams: number | null;
+  carbGrams: number | null;
+  fatGrams: number | null;
+  exerciseScore: number;
+  nutritionScore: number;
+  wellbeingScore: number;
+  sleepScore: number;
+}
+
+export interface AnswerType {
+  [key: string]: string | number | string[];
+}
+
+export interface SectionFeedback {
+  score: number;
+  color: string;
+  feedback: string;
+  recommendations: string;
+}
+
+export interface SectionSummary {
+  title: string;
+  score: number;
+  feedbackItems: SectionFeedback[];
+}
+
+export interface DecodedResults {
+  answers: Record<string, any>;
+  assessmentResults: {
+    score: number;
+    healthCalculations: HealthCalculations;
+    summary: {
+      exercise: string;
+      nutrition: string;
+      wellbeing: string;
+    };
+  };
+}
+
+export interface ResultsPageProps {
+  answers: Record<string, any>;
+  results?: DecodedResults;
 } 

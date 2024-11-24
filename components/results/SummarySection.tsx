@@ -1,33 +1,40 @@
 'use client'
 
-import { AITriggerButton } from '@/components/ai/AITriggerButton'
+import { AITriggerButton } from "@/components/ai/AITriggerButton"
 import { cn } from "@/lib/utils"
 import { Skeleton } from "@/components/ui/skeleton"
-import type { AssessmentData } from '@/types/assessment'
-import type { StructuredSummary, SectionFeedback } from '@/types/summary'
+import { generateStructuredSummary } from '@/utils/summaryUtils'
 
 interface SummarySectionProps {
-  loading: boolean;
-  summary: StructuredSummary;
-  assessmentData: AssessmentData;
+  loading?: boolean
+  healthCalculations: Record<string, any>
+  score: number
+  answers: Record<string, any>
 }
 
-export function SummarySection({ loading, summary, assessmentData }: SummarySectionProps) {
+export function SummarySection({ 
+  loading, 
+  healthCalculations, 
+  score, 
+  answers 
+}: SummarySectionProps) {
+  const summary = generateStructuredSummary({
+    exercise: healthCalculations.exerciseScore || 0,
+    nutrition: healthCalculations.nutritionScore || 0,
+    sleep: healthCalculations.sleepScore || 0,
+    mentalHealth: healthCalculations.mentalHealthScore || 0,
+    healthCalculations
+  })
+
   return (
     <section className="bg-black/30 rounded-lg p-8 deep-space-border">
       <div className="flex justify-between items-center mb-6">
         <h3 className="text-2xl font-semibold">Health Analysis Summary</h3>
         <AITriggerButton 
           assessmentData={{
-            answers: assessmentData.answers,
-            healthCalculations: {
-              ...assessmentData.healthCalculations,
-              recommendedCalories: assessmentData.healthCalculations.recommendedCalories ?? null,
-              proteinGrams: assessmentData.healthCalculations.proteinGrams ?? null,
-              carbGrams: assessmentData.healthCalculations.carbGrams ?? null,
-              fatGrams: assessmentData.healthCalculations.fatGrams ?? null
-            },
-            score: assessmentData.score
+            answers,
+            healthCalculations,
+            score
           }}
           variant="icon"
           size="default"
@@ -38,7 +45,7 @@ export function SummarySection({ loading, summary, assessmentData }: SummarySect
         <Skeleton className="w-full h-40" />
       ) : (
         <div className="space-y-6">
-          {Object.entries(summary).map(([section, feedback]: [string, SectionFeedback]) => (
+          {Object.entries(summary).map(([section, feedback]) => (
             feedback && (
               <div key={section} className={cn(
                 "bg-black/30 rounded-lg p-6",

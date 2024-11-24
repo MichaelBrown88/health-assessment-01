@@ -1,44 +1,48 @@
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle,
-} from "@/components/ui/dialog"
-import { useState } from "react"
-import { AuthForm } from "@/components/auth/AuthForm"
-import { PremiumFeatures } from "./PremiumFeatures"
+'use client'
+
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
+import { useRouter } from "next/navigation"
+import { PRICING_FEATURES } from "@/utils/pricing"
 
 interface PaywallModalProps {
-  isOpen: boolean;
-  onClose: () => void;
+  isOpen: boolean
+  onClose: () => void
 }
 
 export function PaywallModal({ isOpen, onClose }: PaywallModalProps) {
-  const [showAuth, setShowAuth] = useState(false);
-
-  const handleUnlock = () => {
-    setShowAuth(true);
-  };
+  const router = useRouter()
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px] bg-black/90 border-gray-800">
+      <DialogContent className="bg-black/90 border-white/10">
         <DialogHeader>
-          <DialogTitle className="text-xl font-semibold text-center text-white">
-            {!showAuth ? 'Premium Features' : 'Create Premium Account'}
-          </DialogTitle>
+          <DialogTitle>Unlock Premium Features</DialogTitle>
         </DialogHeader>
-        
-        {!showAuth ? (
-          <PremiumFeatures onUnlock={handleUnlock} />
-        ) : (
-          <AuthForm 
-            mode="signup" 
-            isPremiumFlow={true} 
-            onSuccess={onClose} 
-          />
-        )}
+        <div className="space-y-4">
+          <p className="text-lg">
+            Get access to our AI Health Coach and unlock premium features:
+          </p>
+          <ul className="list-disc pl-4 space-y-2">
+            {PRICING_FEATURES.map((feature: string, index: number) => (
+              <li key={index} className="text-gray-300">
+                {feature}
+              </li>
+            ))}
+          </ul>
+          <div className="flex justify-end space-x-4 pt-4">
+            <Button variant="secondary" onClick={onClose}>
+              Maybe Later
+            </Button>
+            <Button 
+              variant="primary"
+              onClick={() => router.push('/premium')}
+            >
+              Upgrade Now
+            </Button>
+          </div>
+        </div>
       </DialogContent>
     </Dialog>
-  );
+  )
 }

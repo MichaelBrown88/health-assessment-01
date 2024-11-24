@@ -12,6 +12,9 @@ import { ContactForm } from '@/components/common/ContactForm'
 import { questions } from '@/data/questions'
 import type { AnswerType } from '@/data/questions'
 import { cn } from '@/lib/utils'
+import { doc, collection, setDoc, serverTimestamp } from 'firebase/firestore'
+import { db } from '@/lib/firebase'
+import { calculateHealthMetrics as calculateMetrics } from '@/utils/healthUtils'
 
 // Add answer reducer
 const answerReducer = (state: AnswerType, action: { type: string; payload: { id: string; value: string | number | string[] } }) => {
@@ -32,9 +35,40 @@ export default function HealthAssessmentPage() {
   const [showContactForm, setShowContactForm] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [resetMessage, setResetMessage] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const router = useRouter()
   const { user } = useAuth()
 
+  // Move these functions before the useCallback hooks
+  const calculateOverallScore = (_answers: AnswerType): number => {
+    // Replace placeholder with actual calculation
+    const healthMetrics = calculateMetrics(_answers)
+    return Math.round(
+      (healthMetrics.exerciseScore * 0.3) +
+      (healthMetrics.nutritionScore * 0.3) +
+      (healthMetrics.wellbeingScore * 0.2) +
+      (healthMetrics.sleepScore * 0.2)
+    )
+  }
+
+  const calculateHealthMetrics = (answers: AnswerType) => {
+    return calculateMetrics(answers)
+  }
+
+  const getSectionSummary = (section: string, _answers: AnswerType): string => {
+    // Implement your summary logic here
+    return `Summary for ${section}`;
+  };
+
+  const generateSummary = (answers: AnswerType) => {
+    return {
+      exercise: getSectionSummary('exercise', answers),
+      nutrition: getSectionSummary('nutrition', answers),
+      wellbeing: getSectionSummary('wellbeing', answers),
+    };
+  };
+
+  // Now define the useCallback hooks
   const handleAnswer = useCallback((value: string | number | string[]) => {
     dispatch({ type: 'SET_ANSWER', payload: { id: questions[currentQuestion].id, value } })
   }, [currentQuestion])
@@ -54,8 +88,17 @@ export default function HealthAssessmentPage() {
     } else {
       // Skip contact form for authenticated users
       if (user) {
-        const encodedAnswers = encodeURIComponent(JSON.stringify(answers))
-        router.push(`/results?answers=${encodedAnswers}`) // Updated path
+        const results = {
+          answers,
+          assessmentResults: {
+            score: calculateOverallScore(answers),
+            healthCalculations: calculateHealthMetrics(answers),
+            summary: generateSummary(answers)
+          }
+        };
+
+        const encodedResults = encodeURIComponent(JSON.stringify(results));
+        router.push(`/results?results=${encodedResults}`);
       } else {
         setShowContactForm(true)
       }
@@ -97,54 +140,47 @@ export default function HealthAssessmentPage() {
     }
   }, [currentQuestion, answers]);
 
-  const handleContactInfoSubmit = useCallback((name: string, email: string) => {
-    if (name && email) {
-      const validAnswers = Object.fromEntries(
-        Object.entries(answers).filter(([, value]) => value !== undefined && value !== null)
-      );
+  const handleContactInfoSubmit = useCallback(async (name: string, email: string) => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    
+    try {
+      // Store contact info in session storage
+      sessionStorage.setItem('contactFormData', JSON.stringify({ name, email }));
       
-      console.log("Submitting answers:", validAnswers);
+      const results = {
+        answers,
+        assessmentResults: {
+          score: calculateOverallScore(answers),
+          healthCalculations: calculateHealthMetrics(answers),
+          summary: generateSummary(answers)
+        },
+        timestamp: Date.now()
+      };
       
-      const encodedAnswers = encodeURIComponent(JSON.stringify(validAnswers));
-      router.push(`/results?answers=${encodedAnswers}`);
-    } else {
-      setSubmitError("Please fill in both name and email.");
-    }
-  }, [answers, router]);
-
-  const calculateOverallScore = (_answers: AnswerType): number => {
-    // Implement your scoring logic here
-    return 75; // Replace with actual calculation
-  };
-
-  const calculateHealthMetrics = (answers: AnswerType): Record<string, string | number | null> => {
-    const getValue = (key: string): string | number | null => {
-      const value = answers[key];
-      if (Array.isArray(value)) {
-        return null;
+      sessionStorage.setItem('temporaryResults', JSON.stringify(results));
+      
+      if (db) {
+        // Save to Firestore as a lead
+        const leadRef = doc(collection(db, 'leads'));
+        await setDoc(leadRef, {
+          email,
+          name,
+          ...results,
+          createdAt: serverTimestamp()
+        });
       }
-      return value || null;
-    };
 
-    return {
-      bmi: getValue('bmi'),
-      bmr: getValue('bmr'),
-      bodyFat: getValue('bodyFat')
-    };
-  };
-
-  const generateSummary = (answers: AnswerType) => {
-    return {
-      exercise: getSectionSummary('exercise', answers),
-      nutrition: getSectionSummary('nutrition', answers),
-      wellbeing: getSectionSummary('wellbeing', answers),
-    };
-  };
-
-  const getSectionSummary = (section: string, _answers: AnswerType): string => {
-    // Implement your summary logic here
-    return `Summary for ${section}`;
-  };
+      const encodedResults = encodeURIComponent(JSON.stringify(results));
+      await router.push(`/results?results=${encodedResults}`);
+      
+    } catch (error) {
+      console.error('Error submitting contact info:', error);
+      setSubmitError('Failed to save your information. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [answers, router, isSubmitting]);
 
   return (
     <div className="fixed-height-container">
@@ -190,7 +226,7 @@ export default function HealthAssessmentPage() {
                   </div>
                 </div>
               ) : (
-                <div className="space-y-8">
+                <div className="space-y-8 relative z-10">
                   <h3 className="text-2xl font-medium tracking-tight text-center text-[#f7f7f7]">
                     Almost there! Please provide your contact information.
                   </h3>

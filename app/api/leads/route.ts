@@ -1,10 +1,10 @@
+import { db } from '@/lib/firebase-admin';
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/firebase';
-import { collection, addDoc } from 'firebase/firestore';
 
 export async function POST(req: Request) {
   try {
-    const { name, email, answers, assessmentResults } = await req.json();
+    const body = await req.json();
+    const { name, email, answers, assessmentResults, acceptedTerms, timestamp } = body;
 
     if (!name || !email || !answers || !assessmentResults) {
       return NextResponse.json(
@@ -13,25 +13,27 @@ export async function POST(req: Request) {
       );
     }
 
-    const leadsRef = collection(db, 'leads');
-    const lead = await addDoc(leadsRef, {
+    // Create a new lead document
+    const leadRef = await db.collection('leads').add({
       name,
       email,
       answers,
       assessmentResults,
-      timestamp: Date.now(),
-      status: 'new'
+      acceptedTerms,
+      timestamp,
+      status: 'new',
+      createdAt: new Date().toISOString()
     });
 
     return NextResponse.json({ 
       success: true, 
-      leadId: lead.id 
+      leadId: leadRef.id 
     });
 
   } catch (error) {
     console.error('Error saving lead:', error);
     return NextResponse.json(
-      { error: 'Failed to save lead' },
+      { error: 'Failed to save information' },
       { status: 500 }
     );
   }

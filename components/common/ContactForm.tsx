@@ -5,6 +5,10 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/use-toast"
+import { Checkbox } from "@/components/ui/checkbox"
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { saveLeadData } from '@/lib/db'
 
 interface ContactFormProps {
   onSubmit: (name: string, email: string) => void
@@ -26,39 +30,51 @@ export const ContactForm: React.FC<ContactFormProps> = ({
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [acceptedTerms, setAcceptedTerms] = useState(false)
   const { toast } = useToast()
+  const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    if (!name || !email || !acceptedTerms) {
+      toast({
+        title: "Error",
+        description: "Please fill in all fields and accept the terms.",
+        variant: "destructive",
+      })
+      return
+    }
+
     setIsSubmitting(true)
 
     try {
-      const response = await fetch('/api/leads', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name,
-          email,
-          answers,
-          assessmentResults
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to save contact information');
+      // Use the existing assessmentResults passed as props
+      const resultsData = {
+        answers,
+        assessmentResults,
+        timestamp: Date.now()
       }
 
-      onSubmit(name, email);
+      // Store in sessionStorage
+      sessionStorage.setItem('temporaryResults', JSON.stringify(resultsData))
+
+      // Call parent's onSubmit
+      await onSubmit(name, email)
+
+      // Encode results for URL
+      const encodedResults = encodeURIComponent(JSON.stringify(resultsData))
       
-    } catch (_error) {
+      // Navigate to results page
+      router.push(`/results?results=${encodedResults}`)
+
+    } catch (error) {
+      console.error('Submission error:', error)
       toast({
         title: "Error",
-        description: "Failed to save your information. Please try again.",
+        description: "Failed to process your submission. Please try again.",
         variant: "destructive",
-      });
+      })
     } finally {
       setIsSubmitting(false)
     }
@@ -75,6 +91,7 @@ export const ContactForm: React.FC<ContactFormProps> = ({
           onChange={(e) => setName(e.target.value)}
           required
           disabled={isSubmitting}
+          className="bg-white/5 border-white/10 focus:border-white/20"
         />
       </div>
       <div className="space-y-2">
@@ -86,16 +103,33 @@ export const ContactForm: React.FC<ContactFormProps> = ({
           onChange={(e) => setEmail(e.target.value)}
           required
           disabled={isSubmitting}
+          className="bg-white/5 border-white/10 focus:border-white/20"
         />
       </div>
+
+      <div className="flex items-start space-x-2">
+        <Checkbox
+          id="terms"
+          checked={acceptedTerms}
+          onCheckedChange={(checked) => setAcceptedTerms(checked as boolean)}
+          className="mt-1"
+        />
+        <Label htmlFor="terms" className="text-sm leading-tight">
+          I agree to share my health data and contact information. Read our{' '}
+          <Link href="/landing/privacy" className="text-primary hover:underline">
+            Privacy Policy
+          </Link>
+          {' '}to learn how we handle your data in compliance with health data regulations.
+        </Label>
+      </div>
+
       {error && <p className="text-red-500 text-sm">{error}</p>}
       <Button 
         type="submit" 
-        variant="deepSpaceBorder" 
-        className="w-full"
+        className="w-full deep-space-gradient shadow-glow"
         disabled={isSubmitting}
       >
-        {isSubmitting ? "Saving..." : "Submit"}
+        {isSubmitting ? "Saving..." : "View Your Results"}
       </Button>
     </form>
   )

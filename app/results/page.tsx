@@ -1,96 +1,136 @@
 'use client'
 
-import { useSearchParams } from 'next/navigation'
-import { useAssessmentResults } from '@/hooks/useAssessmentResults'
-import { useHealthCalculations } from '@/hooks/useHealthCalculations'
-import { AIHealthCoach } from '@/components/ai/AIHealthCoach'
-import { 
-  ResultsErrorBoundary,
-  ResultsLoading,
-  ScoreOverview,
-  AnalysisSection,
-  GoalsSection,
-  SummarySection 
-} from '@/components/results'
+import { useEffect, useState } from 'react'
+import { useAuth } from '@/contexts/AuthContext'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { calculateHealthMetrics } from '@/utils/healthUtils'
+import { calculateHealthScore, getOverallScore } from '@/utils/pillarScoring'
+import { HealthPillars } from '@/components/results/HealthPillars'
+import { HealthScoreSection } from '@/components/results/HealthScoreSection'
+import { HealthMetricsContainer } from '@/components/results/HealthMetricsContainer'
+import { FeedbackSections } from '@/components/results/FeedbackSections'
+import { CTASection } from '@/components/results/CTASection'
+import { ResultsLoading } from '@/components/results/ResultsLoading'
+import { ResultsErrorBoundary } from '@/components/results/ResultsErrorBoundary'
+import { SpaceTheme } from '@/components/layout/SpaceTheme'
+import type { DecodedResults } from '@/types/results'
+import { WelcomeMessage } from '@/components/results/WelcomeMessage'
+import { SummarySection } from '@/components/results/SummarySection'
 
 export default function ResultsPage() {
-  const params = useSearchParams()
-  const assessmentId = params?.get('id') ?? null
-  const answersParam = params?.get('answers') ?? null
+  const { user } = useAuth()
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const [results, setResults] = useState<DecodedResults | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [contactInfo, setContactInfo] = useState<{ name: string } | null>(null)
 
-  const { answers, loading, error } = useAssessmentResults(assessmentId, answersParam)
-  const { score, isGoalMisaligned, structuredSummary } = useHealthCalculations(answers)
+  useEffect(() => {
+    const loadResults = async () => {
+      try {
+        // Try getting name from multiple sources
+        const contactData = sessionStorage.getItem('contactFormData');
+        const userData = user?.displayName || user?.email?.split('@')[0];
+        
+        if (contactData) {
+          setContactInfo(JSON.parse(contactData));
+        } else if (userData) {
+          setContactInfo({ name: userData });
+        }
 
-  const metrics = {
-    overallScore: score,
-    exerciseScore: Math.round(score * 0.8),
-    nutritionScore: Math.round(score * 0.9),
-    wellbeingScore: Math.round(score * 0.85)
-  }
+        const resultsParam = searchParams?.get('results')
+        if (resultsParam) {
+          const decodedResults = JSON.parse(decodeURIComponent(resultsParam))
+          const healthCalcs = calculateHealthMetrics(decodedResults.answers)
+          
+          setResults({
+            ...decodedResults,
+            assessmentResults: {
+              ...decodedResults.assessmentResults,
+              healthCalculations: healthCalcs
+            }
+          })
+          setLoading(false)
+          return
+        }
 
-  if (error) {
-    throw error;
-  }
+        const storedResults = sessionStorage.getItem('temporaryResults')
+        if (storedResults) {
+          const parsedResults = JSON.parse(storedResults)
+          setResults(parsedResults)
+          setLoading(false)
+          return
+        }
 
-  if (loading) {
-    return <ResultsLoading />
-  }
-
-  const assessmentData = {
-    answers,
-    score,
-    metrics,
-    createdAt: new Date(),
-    userId: undefined,
-    healthCalculations: {
-      bmi: null,
-      bmr: null,
-      tdee: null,
-      bodyFat: null,
-      isBodyFatEstimated: false,
-      recommendedCalories: null,
-      proteinGrams: null,
-      carbGrams: null,
-      fatGrams: null
+        router.push('/questions')
+      } catch (error) {
+        console.error('Error loading results:', error)
+        setError('Failed to load results')
+        setLoading(false)
+      }
     }
-  }
+
+    loadResults()
+  }, [searchParams, router, user])
+
+  if (loading) return <ResultsLoading />
+  if (error) return <div className="text-red-500">{error}</div>
+  if (!results) return <div>No results found. Please complete the assessment.</div>
+
+  const pillarScores = calculateHealthScore(
+    results.answers,
+    results.assessmentResults.healthCalculations
+  )
+
+  const overallScore = getOverallScore(pillarScores)
 
   return (
-    <div className="scrollable-container">
-      <ResultsErrorBoundary>
-        <div className="container mx-auto px-4 py-8 space-y-8 max-w-4xl">
-          <ScoreOverview 
-            score={score} 
-            onRetake={() => window.location.href = '/questions'} 
-            isGoalMisaligned={isGoalMisaligned} 
-          />
-          
-          <AnalysisSection answers={answers} />
-          
-          <AIHealthCoach 
-            assessmentData={{
-              answers,
-              healthCalculations: {
-                bmi: null,
-                bmr: null,
-                tdee: null,
-                bodyFat: null,
-                isBodyFatEstimated: false
-              },
-              score
-            }}
-          />
-          
-          <GoalsSection goals={answers.goals || []} />
-          
-          <SummarySection 
-            loading={loading}
-            summary={structuredSummary}
-            assessmentData={assessmentData}
-          />
+    <ResultsErrorBoundary>
+      <div className="min-h-screen flex flex-col relative">
+        <SpaceTheme />
+        <div className="relative z-20 w-full max-w-4xl mx-auto px-4 py-8 flex-1">
+          <div className="space-y-8">
+            <WelcomeMessage 
+              contactInfo={contactInfo}
+              user={user}
+            />
+
+            <HealthScoreSection 
+              score={overallScore}
+            />
+
+            <HealthMetricsContainer 
+              healthCalculations={results.assessmentResults.healthCalculations}
+              answers={results.answers}
+              score={overallScore}
+            />
+
+            <div className="relative">
+              <HealthPillars 
+                pillarScores={pillarScores}
+              />
+            </div>
+
+            <FeedbackSections 
+              answers={results.answers}
+              healthCalculations={results.assessmentResults.healthCalculations}
+            />
+
+            <SummarySection 
+              answers={results.answers}
+              healthCalculations={results.assessmentResults.healthCalculations}
+              score={overallScore}
+            />
+
+            <CTASection user={user} />
+
+            <p className="mt-4 text-sm text-gray-300">
+              Remember, these suggestions are based on general guidelines. For a tailored approach to achieving your health goals, consider consulting with a health professional.
+            </p>
+          </div>
         </div>
-      </ResultsErrorBoundary>
-    </div>
+      </div>
+    </ResultsErrorBoundary>
   )
 }
-
