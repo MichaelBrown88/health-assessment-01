@@ -7,13 +7,13 @@ import { AITriggerButton } from "@/components/ai/AITriggerButton"
 import { Button } from "@/components/ui/button"
 import { AlertTriangle, X } from "lucide-react"
 import { Alert } from "@/components/ui/alert"
-import type { HealthCalculations } from "@/types/results"
+import type { HealthCalculations, AnswerType } from "@/types/results"
 
 interface HealthMetricsCardProps {
   title: string | React.ReactNode
   children: React.ReactNode
   healthCalculations: HealthCalculations
-  answers: Record<string, any>
+  answers: AnswerType
   score?: number
   footer?: string
   className?: string

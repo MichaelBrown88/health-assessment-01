@@ -1,3 +1,5 @@
+import type { AnswerType } from '@/types/results';
+
 export interface QuestionOption {
   value: string;
   label: string;
@@ -15,10 +17,6 @@ export interface Question {
   defaultValue?: number;
   condition?: (answers: AnswerType) => boolean;
   optional?: boolean;
-}
-
-export interface AnswerType {
-  [key: string]: string | number | string[];
 }
 
 export const questions: Question[] = [
@@ -78,7 +76,7 @@ export const questions: Question[] = [
       { value: "light", label: "Lightly active (light exercise 1-2 days/week)" },
       { value: "moderate", label: "Moderately active (moderate exercise 3-5 days/week)" },
       { value: "active", label: "Active (hard exercise 6-7 days/week)" },
-      { value: "veryActive", label: "Very active (very hard exercise, physical job or training twice a day)" },
+      { value: "very-active", label: "Very active (very hard exercise, physical job or training twice a day)" },
     ],
   },
   {
@@ -179,7 +177,8 @@ export const questions: Question[] = [
       { value: "less-than-6", label: "Less than 6 hours" },
       { value: "6-7", label: "6-7 hours" },
       { value: "7-8", label: "7-8 hours" },
-      { value: "more-than-8", label: "More than 8 hours" },
+      { value: "8-9", label: "8-9 hours (optimal)" },
+      { value: "more-than-9", label: "More than 9 hours" },
     ],
   },
   {

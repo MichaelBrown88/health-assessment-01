@@ -3,7 +3,7 @@
 import { Card } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { AITriggerButton } from "@/components/ai/AITriggerButton"
-import { getHealthGoalAdvice } from '@/utils/healthUtils'
+import { getHealthGoalAdvice } from '@/utils/health';
 import type { HealthCalculations } from "@/types/results"
 
 interface HealthGoalsSectionProps {

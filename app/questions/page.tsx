@@ -10,11 +10,12 @@ import { SpaceTheme } from '@/components/layout/SpaceTheme'
 import { QuestionRenderer } from '@/components/assessment/QuestionRenderer'
 import { ContactForm } from '@/components/common/ContactForm'
 import { questions } from '@/data/questions'
-import type { AnswerType } from '@/data/questions'
+import type { AnswerType } from '@/types/results'
 import { cn } from '@/lib/utils'
 import { doc, collection, setDoc, serverTimestamp } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
-import { calculateHealthMetrics as calculateMetrics } from '@/utils/healthUtils'
+import { calculateHealthMetrics } from '@/utils/health/calculations'
+import { healthScoring } from '@/utils/health'
 
 // Add answer reducer
 const answerReducer = (state: AnswerType, action: { type: string; payload: { id: string; value: string | number | string[] } }) => {
@@ -30,7 +31,7 @@ const answerReducer = (state: AnswerType, action: { type: string; payload: { id:
 }
 
 export default function HealthAssessmentPage() {
-  const [answers, dispatch] = useReducer(answerReducer, {})
+  const [answers, dispatch] = useReducer(answerReducer, {} as AnswerType)
   const [currentQuestion, setCurrentQuestion] = useState(0)
   const [showContactForm, setShowContactForm] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
@@ -39,34 +40,25 @@ export default function HealthAssessmentPage() {
   const router = useRouter()
   const { user } = useAuth()
 
-  // Move these functions before the useCallback hooks
-  const calculateOverallScore = (_answers: AnswerType): number => {
-    // Replace placeholder with actual calculation
-    const healthMetrics = calculateMetrics(_answers)
-    return Math.round(
-      (healthMetrics.exerciseScore * 0.3) +
-      (healthMetrics.nutritionScore * 0.3) +
-      (healthMetrics.wellbeingScore * 0.2) +
-      (healthMetrics.sleepScore * 0.2)
-    )
-  }
+  const calculateOverallScore = useCallback((_answers: AnswerType): number => {
+    // Calculate overall score using health metrics
+    const metrics = calculateHealthMetrics(_answers)
+    const pillarScores = healthScoring.calculateHealthPillars(_answers, metrics)
+    return healthScoring.calculateOverallScore(pillarScores, metrics.bmi)
+  }, [])
 
-  const calculateHealthMetrics = (answers: AnswerType) => {
-    return calculateMetrics(answers)
-  }
-
-  const getSectionSummary = (section: string, _answers: AnswerType): string => {
-    // Implement your summary logic here
-    return `Summary for ${section}`;
-  };
-
-  const generateSummary = (answers: AnswerType) => {
+  const generateSummary = useCallback((answers: AnswerType) => {
     return {
       exercise: getSectionSummary('exercise', answers),
       nutrition: getSectionSummary('nutrition', answers),
       wellbeing: getSectionSummary('wellbeing', answers),
-    };
-  };
+    }
+  }, [])
+
+  const getSectionSummary = useCallback((section: string, _answers: AnswerType): string => {
+    // Implement your summary logic here
+    return `Summary for ${section}`
+  }, [])
 
   // Now define the useCallback hooks
   const handleAnswer = useCallback((value: string | number | string[]) => {
@@ -79,7 +71,7 @@ export default function HealthAssessmentPage() {
       nextQuestion < questions.length &&
       questions[nextQuestion].condition &&
       typeof questions[nextQuestion].condition === 'function' &&
-      questions[nextQuestion].condition?.(answers as AnswerType) === false
+      questions[nextQuestion].condition?.(answers) === false
     ) {
       nextQuestion++
     }
@@ -95,32 +87,32 @@ export default function HealthAssessmentPage() {
             healthCalculations: calculateHealthMetrics(answers),
             summary: generateSummary(answers)
           }
-        };
+        }
 
-        const encodedResults = encodeURIComponent(JSON.stringify(results));
-        router.push(`/results?results=${encodedResults}`);
+        const encodedResults = encodeURIComponent(JSON.stringify(results))
+        router.push(`/results?results=${encodedResults}`)
       } else {
         setShowContactForm(true)
       }
     }
-  }, [currentQuestion, answers, user, router])
+  }, [currentQuestion, answers, user, router, calculateOverallScore, generateSummary])
 
   const handlePrevious = useCallback(() => {
-    let prevQuestion = currentQuestion - 1;
+    let prevQuestion = currentQuestion - 1
     while (
       prevQuestion >= 0 &&
       questions[prevQuestion].condition &&
       typeof questions[prevQuestion].condition === 'function' &&
-      questions[prevQuestion].condition?.(answers as AnswerType) === false
+      questions[prevQuestion].condition?.(answers) === false
     ) {
-      prevQuestion--;
+      prevQuestion--
     }
     if (prevQuestion >= 0) {
-      setCurrentQuestion(prevQuestion);
+      setCurrentQuestion(prevQuestion)
       // Reset bodyFat when going back from the next question
       if (questions[currentQuestion].id === 'activityLevel' && questions[prevQuestion].id === 'bodyFat') {
         // Show reset message
-        setResetMessage(true);
+        setResetMessage(true)
         
         // Delay the actual reset
         setTimeout(() => {
@@ -128,59 +120,58 @@ export default function HealthAssessmentPage() {
             type: 'SET_ANSWER', 
             payload: { 
               id: 'bodyFat', 
-              value: questions[prevQuestion].defaultValue 
+              value: questions[prevQuestion].defaultValue || 0
             } 
-          });
+          })
           // Hide message after reset
           setTimeout(() => {
-            setResetMessage(false);
-          }, 1000);
-        }, 300);
+            setResetMessage(false)
+          }, 1000)
+        }, 300)
       }
     }
-  }, [currentQuestion, answers]);
+  }, [currentQuestion, answers])
 
   const handleContactInfoSubmit = useCallback(async (name: string, email: string) => {
-    if (isSubmitting) return;
-    setIsSubmitting(true);
+    if (isSubmitting) return
+    setIsSubmitting(true)
     
     try {
       // Store contact info in session storage
-      sessionStorage.setItem('contactFormData', JSON.stringify({ name, email }));
+      sessionStorage.setItem('contactFormData', JSON.stringify({ name, email }))
       
-      const results = {
-        answers,
-        assessmentResults: {
-          score: calculateOverallScore(answers),
-          healthCalculations: calculateHealthMetrics(answers),
-          summary: generateSummary(answers)
-        },
-        timestamp: Date.now()
-      };
-      
-      sessionStorage.setItem('temporaryResults', JSON.stringify(results));
-      
-      if (db) {
-        // Save to Firestore as a lead
-        const leadRef = doc(collection(db, 'leads'));
-        await setDoc(leadRef, {
-          email,
-          name,
-          ...results,
-          createdAt: serverTimestamp()
-        });
+      // Try to save to Firestore, but don't block on failure
+      try {
+        if (db) {
+          const leadRef = doc(collection(db, 'leads'))
+          await setDoc(leadRef, {
+            email,
+            name,
+            answers,
+            score: calculateOverallScore(answers),
+            healthCalculations: calculateHealthMetrics(answers),
+            summary: generateSummary(answers),
+            createdAt: serverTimestamp()
+          })
+        }
+      } catch (dbError) {
+        // Log the error but continue with the flow
+        console.warn('Failed to save to database:', dbError)
       }
 
-      const encodedResults = encodeURIComponent(JSON.stringify(results));
-      await router.push(`/results?results=${encodedResults}`);
+      // Encode answers for URL
+      const encodedAnswers = encodeURIComponent(JSON.stringify(answers))
+      
+      // Always proceed to results page, even if db save failed
+      await router.push(`/results?answers=${encodedAnswers}`)
       
     } catch (error) {
-      console.error('Error submitting contact info:', error);
-      setSubmitError('Failed to save your information. Please try again.');
+      console.error('Error in contact submission flow:', error)
+      setSubmitError('Failed to process your submission. Please try again.')
     } finally {
-      setIsSubmitting(false);
+      setIsSubmitting(false)
     }
-  }, [answers, router, isSubmitting]);
+  }, [answers, router, isSubmitting, calculateOverallScore, generateSummary])
 
   return (
     <div className="fixed-height-container">

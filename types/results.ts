@@ -69,7 +69,7 @@ export interface SectionSummary {
 }
 
 export interface DecodedResults {
-  answers: Record<string, any>;
+  answers: AnswerType;
   assessmentResults: {
     score: number;
     healthCalculations: HealthCalculations;
@@ -82,6 +82,20 @@ export interface DecodedResults {
 }
 
 export interface ResultsPageProps {
-  answers: Record<string, any>;
+  answers: AnswerType;
   results?: DecodedResults;
+}
+
+export interface HealthPillarScore {
+  score: number;
+  color: string;
+  label: string;
+  description: string;
+}
+
+export interface HealthPillarScores {
+  exercise: HealthPillarScore;
+  nutrition: HealthPillarScore;
+  mentalHealth: HealthPillarScore;
+  recovery: HealthPillarScore;
 } 

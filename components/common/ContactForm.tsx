@@ -8,14 +8,14 @@ import { useToast } from "@/components/ui/use-toast"
 import { Checkbox } from "@/components/ui/checkbox"
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { saveLeadData } from '@/lib/db'
+import type { HealthCalculations, AnswerType } from '@/types/results'
 
 interface ContactFormProps {
   onSubmit: (name: string, email: string) => void
-  answers: Record<string, string | number | boolean | string[]>
+  answers: AnswerType
   assessmentResults: {
     score: number;
-    healthCalculations: Record<string, string | number | null>;
+    healthCalculations: HealthCalculations;
     summary: Record<string, string>;
   };
   error?: string | null
@@ -49,24 +49,17 @@ export const ContactForm: React.FC<ContactFormProps> = ({
     setIsSubmitting(true)
 
     try {
-      // Use the existing assessmentResults passed as props
-      const resultsData = {
-        answers,
-        assessmentResults,
-        timestamp: Date.now()
-      }
-
-      // Store in sessionStorage
-      sessionStorage.setItem('temporaryResults', JSON.stringify(resultsData))
+      // Store contact info in session storage
+      sessionStorage.setItem('contactFormData', JSON.stringify({ name, email }))
 
       // Call parent's onSubmit
       await onSubmit(name, email)
 
-      // Encode results for URL
-      const encodedResults = encodeURIComponent(JSON.stringify(resultsData))
+      // Encode answers for URL
+      const encodedAnswers = encodeURIComponent(JSON.stringify(answers))
       
       // Navigate to results page
-      router.push(`/results?results=${encodedResults}`)
+      router.push(`/results?answers=${encodedAnswers}`)
 
     } catch (error) {
       console.error('Submission error:', error)

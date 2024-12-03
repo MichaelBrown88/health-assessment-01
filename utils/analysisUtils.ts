@@ -13,7 +13,7 @@ export function getContextualAnalysis(
     case 'exercise':
       if (answers.exerciseIntensity === 'vigorous' && answers.recovery === 'poor') {
         analyses.push({
-          warning: true,
+          warning: 'warning',
           severity: 'warning',
           title: 'Exercise Intensity Warning',
           feedback: 'Your high-intensity training combined with poor recovery could lead to overtraining.',
@@ -29,7 +29,7 @@ export function getContextualAnalysis(
     case 'wellbeing':
       if (answers.stress === 'very-high' && answers.sleepQuality === 'poor') {
         analyses.push({
-          warning: true,
+          warning: 'warning',
           severity: 'warning',
           title: 'Stress-Sleep Impact',
           feedback: 'High stress levels appear to be affecting your sleep quality.',
@@ -45,7 +45,7 @@ export function getContextualAnalysis(
     case 'nutrition':
       if (answers.activityLevel === 'veryActive' && answers.mealFrequency === '1-2') {
         analyses.push({
-          warning: true,
+          warning: 'warning',
           severity: 'warning',
           title: 'Nutrition Timing Concern',
           feedback: 'Your meal frequency may not support your high activity level.',

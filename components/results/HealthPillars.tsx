@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils"
-import type { HealthPillarScores } from "@/types/scoring"
+import type { HealthPillarScores } from "@/types/results"
 import {
   Tooltip,
   TooltipContent,
@@ -12,12 +12,8 @@ interface HealthPillarsProps {
 }
 
 export function HealthPillars({ pillarScores }: HealthPillarsProps) {
-  const getPercentage = (score: number) => Math.round((score / 20) * 100);
-  
   const getTooltipContent = (key: string, score: number) => {
     switch(key) {
-      case 'bodyComposition':
-        return "Your score combines your BMI and body fat %. We look at both because BMI alone doesn't tell the whole story.";
       case 'exercise':
         return "This score reflects how active you are daily, how hard you work out, and how long you exercise for.";
       case 'nutrition':
@@ -37,7 +33,7 @@ export function HealthPillars({ pillarScores }: HealthPillarsProps) {
         <h3 className="text-2xl font-semibold mb-6">Health Pillars</h3>
         <div className="space-y-4">
           {Object.entries(pillarScores).map(([key, pillar]) => {
-            const percentage = getPercentage(pillar.score);
+            const percentage = Math.min(100, Math.max(0, Math.round(pillar.score)));
             const status = percentage >= 80 ? "Excellent" :
                           percentage >= 60 ? "Good" :
                           percentage >= 40 ? "Fair" : "Needs Focus";

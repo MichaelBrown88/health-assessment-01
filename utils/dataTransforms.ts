@@ -5,7 +5,7 @@ export function transformAssessmentForChart(assessment: AssessmentResult) {
     timestamp: assessment.timestamp,
     date: new Date(assessment.timestamp),
     score: assessment.metrics.overallScore,
-    bmi: assessment.metrics.bmi || calculateBMI(assessment.metrics.weight, assessment.metrics.height),
+    bmi: assessment.metrics.bmi || calculateBMI(assessment.metrics.weight || 0, assessment.metrics.height || 0),
     bodyFat: assessment.metrics.bodyFat,
     weight: assessment.metrics.weight,
     height: assessment.metrics.height,

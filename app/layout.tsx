@@ -3,6 +3,7 @@ import { AuthProvider } from '@/contexts/AuthContext'
 import { SpaceTheme } from '@/components/layout/SpaceTheme'
 import './globals.css'
 import { Montserrat } from 'next/font/google';
+import { AICoachProvider } from '@/contexts/AICoachContext';
 
 const montserrat = Montserrat({ 
   subsets: ['latin'],
@@ -19,13 +20,15 @@ export default function RootLayout({
     <html lang="en" className={`${montserrat.variable}`}>
       <body>
         <AuthProvider>
-          <SpaceTheme />
-          <div className="relative min-h-screen">
-            <Header />
-            <main className="pt-24">
-              {children}
-            </main>
-          </div>
+          <AICoachProvider>
+            <SpaceTheme />
+            <div className="relative min-h-screen">
+              <Header />
+              <main className="pt-24">
+                {children}
+              </main>
+            </div>
+          </AICoachProvider>
         </AuthProvider>
       </body>
     </html>

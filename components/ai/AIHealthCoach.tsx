@@ -7,55 +7,14 @@ import { useAuth } from '@/contexts/AuthContext';
 import { PaywallModal } from '@/components/premium/PaywallModal';
 import { Button } from '@/components/ui/button';
 import { Lock, Send, Loader2, X } from 'lucide-react';
-import { generateAIResponse } from '@/utils/ai-utils'
+import type { AssessmentData } from '@/types/assessment';
+import { Message, EXAMPLE_QUESTIONS } from './constants';
+import { TypingIndicator } from './TypingIndicator';
 
-interface Message {
-  id: string;
-  type: 'user' | 'assistant';
-  content: string;
-  timestamp: Date;
-}
-
-export interface AIHealthCoachProps {
-  assessmentData: {
-    answers: Record<string, unknown>;
-    healthCalculations: {
-      bmi: number | null;
-      bmr: number | null;
-      tdee: number | null;
-      bodyFat: number | null;
-      isBodyFatEstimated: boolean;
-    };
-    score: number;
-  };
+interface AIHealthCoachProps {
+  assessmentData: AssessmentData;
   onClose?: () => void;
 }
-
-const EXAMPLE_QUESTIONS = [
-  "Based on my results, how can I improve my exercise routine?",
-  "What nutrition changes would help me reach my goals?",
-  "How can I better manage my stress levels?"
-];
-
-const TypingIndicator = () => (
-  <div className="flex items-center space-x-2 p-2">
-    <motion.div
-      className="w-1.5 h-1.5 bg-blue-400 rounded-full"
-      animate={{ scale: [1, 1.2, 1] }}
-      transition={{ duration: 1, repeat: Infinity }}
-    />
-    <motion.div
-      className="w-1.5 h-1.5 bg-blue-400 rounded-full"
-      animate={{ scale: [1, 1.2, 1] }}
-      transition={{ duration: 1, repeat: Infinity, delay: 0.2 }}
-    />
-    <motion.div
-      className="w-1.5 h-1.5 bg-blue-400 rounded-full"
-      animate={{ scale: [1, 1.2, 1] }}
-      transition={{ duration: 1, repeat: Infinity, delay: 0.4 }}
-    />
-  </div>
-);
 
 export function AIHealthCoach({ assessmentData, onClose }: AIHealthCoachProps) {
   const [question, setQuestion] = useState('');
@@ -96,11 +55,6 @@ export function AIHealthCoach({ assessmentData, onClose }: AIHealthCoachProps) {
   };
 
   const handleAskQuestion = async (questionText: string = question) => {
-    if (!user) {
-      setShowPaywall(true);
-      return;
-    }
-
     if (!questionText.trim()) {
       toast({
         title: "Error",
@@ -119,6 +73,14 @@ export function AIHealthCoach({ assessmentData, onClose }: AIHealthCoachProps) {
     setMessages(prev => [...prev, userMessage]);
     setQuestion('');
     setIsLoading(true);
+
+    if (!user) {
+      setTimeout(() => {
+        setIsLoading(false);
+        setShowPaywall(true);
+      }, 500);
+      return;
+    }
 
     try {
       const response = await fetch('/api/health-coach', {
@@ -160,15 +122,10 @@ export function AIHealthCoach({ assessmentData, onClose }: AIHealthCoachProps) {
   };
 
   return (
-    <>
-      <motion.div
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-      >
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center">
+      <div className="w-full max-w-2xl mx-4">
         <motion.div
-          className="w-full max-w-2xl mx-4 bg-black/80 deep-space-border rounded-xl overflow-hidden shadow-2xl"
+          className="bg-black/80 deep-space-border rounded-xl overflow-hidden shadow-2xl"
           initial={{ scale: 0.9, y: 20 }}
           animate={{ scale: 1, y: 0 }}
           exit={{ scale: 0.9, y: 20 }}
@@ -249,12 +206,15 @@ export function AIHealthCoach({ assessmentData, onClose }: AIHealthCoachProps) {
             )}
           </div>
         </motion.div>
-      </motion.div>
+      </div>
 
       <PaywallModal 
         isOpen={showPaywall} 
-        onClose={() => setShowPaywall(false)} 
+        onClose={() => {
+          setShowPaywall(false);
+          onClose();
+        }} 
       />
-    </>
+    </div>
   );
 }

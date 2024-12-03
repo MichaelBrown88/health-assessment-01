@@ -4,10 +4,14 @@ export interface HealthCalculations {
   tdee: number | null;
   bodyFat: number | null;
   isBodyFatEstimated: boolean;
-  recommendedCalories?: number | null;
-  proteinGrams?: number | null;
-  carbGrams?: number | null;
-  fatGrams?: number | null;
+  recommendedCalories: number | null;
+  proteinGrams: number | null;
+  carbGrams: number | null;
+  fatGrams: number | null;
+  exerciseScore: number;
+  nutritionScore: number;
+  wellbeingScore: number;
+  sleepScore: number;
 }
 
 export interface AnswerType {
@@ -58,7 +62,7 @@ export interface AssessmentAnswers extends AnswerType {
   carbPreference?: 'very-low' | 'low' | 'moderate' | 'high' | 'very-high';
 
   // Sleep & Recovery
-  sleepDuration?: 'less-than-5' | '5-6' | '6-7' | '7-8' | '8-9' | 'more-than-9';
+  sleepDuration?: 'less-than-6' | '6-7' | '7-8' | '8-9' | 'more-than-9';
   sleepQuality?: 'poor' | 'fair' | 'good' | 'excellent';
 
   // Mental Health

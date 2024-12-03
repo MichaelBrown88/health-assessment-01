@@ -15,7 +15,7 @@ interface HealthScoreSectionProps {
 export function HealthScoreSection({ score }: HealthScoreSectionProps) {
   return (
     <TooltipProvider delayDuration={0}>
-      <section className="bg-black/30 rounded-lg p-8 deep-space-border text-center">
+      <section className="bg-black/30 rounded-lg p-8 deep-space-border text-center max-w-4xl mx-auto">
         <Tooltip>
           <TooltipTrigger asChild>
             <div className="cursor-pointer">

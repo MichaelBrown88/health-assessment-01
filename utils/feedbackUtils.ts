@@ -1,72 +1,71 @@
-import { SectionFeedback } from '@/types/results'
+import type { SectionFeedback } from '@/types/results';
+import { getFeedbackColor, getFeedbackText } from '@/utils/feedback';
+import type { FeedbackMap } from '@/types/feedback';
 
-export const getSafeAnswer = (answer: string | number | string[] | null | undefined): string => {
-  if (answer === undefined || answer === null) {
-    return '';
-  }
-  if (typeof answer === 'string') {
-    return answer;
-  }
-  if (Array.isArray(answer)) {
-    return answer.join(', ');
-  }
-  try {
-    return String(answer);
-  } catch {
-    return '';
-  }
-};
-
-export const getSectionFeedback = (item: string, value: string): SectionFeedback => {
-  // Implement feedback logic based on item type
-  switch (item) {
-    case 'activityLevel':
-      return {
-        item,
-        score: value === 'sedentary' ? 20 : value === 'light' ? 40 : value === 'moderate' ? 60 : 80,
-        color: value === 'sedentary' ? 'red' : value === 'light' ? 'amber' : 'green',
-        feedback: `Your activity level is ${value}`,
-        recommendations: getActivityRecommendation(value)
-      };
-    case 'exerciseIntensity':
-      return {
-        item,
-        score: getItemScore(item, value),
-        color: getTrafficLightColor(getItemScore(item, value)),
-        feedback: getFeedbackText(value, item),
-        recommendations: getExerciseRecommendations(value)
-      };
-    // Add other cases
-    default:
-      return {
-        item,
-        score: 50,
-        color: 'amber',
-        feedback: `Your ${item} is ${value}`,
-        recommendations: 'Consider consulting a health professional for personalized advice.'
-      };
-  }
-};
-
-export const getMealFeedback = (value: string): SectionFeedback => {
+export function getExerciseFeedback(value: string, type: keyof FeedbackMap): SectionFeedback {
+  const score = getItemScore(value, type);
+  const color = getFeedbackColor(value, type);
+  const feedbackText = getFeedbackText(type, value);
+  
   return {
-    item: 'lastMeal',
-    score: 50,
-    color: 'amber',
-    feedback: `Your last meal was ${value}`,
-    recommendations: 'Consider timing your meals throughout the day.'
+    score,
+    color,
+    feedback: feedbackText?.feedback || `Your ${type} is ${value}`,
+    recommendations: feedbackText?.recommendations || getExerciseRecommendations(value, type)
   };
-};
+}
 
-function getActivityRecommendation(level: string): string {
-  switch (level) {
-    case 'sedentary':
-      return 'Try to incorporate more movement into your daily routine.';
-    case 'light':
-      return 'Consider increasing your activity level gradually.';
-    case 'moderate':
-      return 'You\'re on the right track! Consider adding variety to your activities.';
-    default:
-      return 'Maintain your active lifestyle while ensuring proper recovery.';
-  }
+export function getMealFeedback(value: string): SectionFeedback {
+  const color = getFeedbackColor(value, 'lastMeal' as keyof FeedbackMap);
+  const feedbackText = getFeedbackText('lastMeal' as keyof FeedbackMap, value);
+
+  return {
+    score: 50,
+    color,
+    feedback: feedbackText?.feedback || `Your last meal was ${value}`,
+    recommendations: feedbackText?.recommendations || 'Consider timing your meals throughout the day.'
+  };
+}
+
+export function getActivityRecommendation(level: string): string {
+  const feedbackText = getFeedbackText('activityLevel' as keyof FeedbackMap, level);
+  return feedbackText?.recommendations || 'Maintain your active lifestyle while ensuring proper recovery.';
+}
+
+function getItemScore(value: string, type: string): number {
+  const scoreMap: Record<string, Record<string, number>> = {
+    exerciseIntensity: {
+      'light': 60,
+      'moderate': 80,
+      'vigorous': 100,
+      'very-intense': 90
+    },
+    exerciseDuration: {
+      'less-than-30': 60,
+      '30-45': 80,
+      '45-60': 100,
+      '60+': 90
+    }
+  };
+
+  return scoreMap[type]?.[value] || 50;
+}
+
+function getExerciseRecommendations(value: string, type: string): string {
+  const recommendationMap: Record<string, Record<string, string>> = {
+    exerciseIntensity: {
+      'light': 'Consider gradually increasing intensity for better results.',
+      'moderate': 'Good balance. Mix in some higher intensity sessions when ready.',
+      'vigorous': 'Ensure proper recovery between intense sessions.',
+      'very-intense': 'Monitor recovery closely and consider periodization.'
+    },
+    exerciseDuration: {
+      'less-than-30': 'Try to extend sessions gradually for better results.',
+      '30-45': 'Good duration. Focus on session quality.',
+      '45-60': 'Excellent duration for most goals.',
+      '60+': 'Ensure intensity remains high throughout longer sessions.'
+    }
+  };
+
+  return recommendationMap[type]?.[value] || 'Maintain consistent effort and track progress.';
 } 

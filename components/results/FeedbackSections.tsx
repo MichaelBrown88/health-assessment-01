@@ -1,157 +1,157 @@
 'use client'
 
-import { AITriggerButton } from "@/components/ai/AITriggerButton"
-import { Section } from "@/components/common/Section"
-import type { HealthCalculations } from "@/types/results"
-import type { ContextualAnalysis } from "@/types/ContextualAnalysis"
+import { Card } from "@/components/ui/card"
+import type { HealthCalculations, AnswerType } from "@/types/results"
+import type { FeedbackMap } from "@/types/feedback"
+import { FeedbackItem } from "./feedback/FeedbackItem"
+import { getFeedbackColor, getFeedbackText, formatDisplayValue, normalizeValue } from "@/utils/feedback"
+import { getContextualAnalyses } from "@/utils/feedback/contextual"
+import { ContextualAlert } from "@/components/common/ContextualAlert"
 
 interface FeedbackSectionsProps {
-  answers: Record<string, any>
-  healthCalculations: HealthCalculations
+  answers: AnswerType;
+  healthCalculations: HealthCalculations;
+}
+
+interface FeedbackItemData {
+  label: string;
+  value: string;
+  type: keyof FeedbackMap;
+}
+
+interface FeedbackSection {
+  title: string;
+  score: number;
+  items: FeedbackItemData[];
 }
 
 export function FeedbackSections({ answers, healthCalculations }: FeedbackSectionsProps) {
-  const getFeedbackColor = (value: any, itemType: string) => {
-    if (!value) return "red"
-    
-    switch (itemType) {
-      case 'activityLevel':
-        return value === 'sedentary' ? "red" :
-               value === 'light' ? "yellow" : "green"
-      case 'exerciseIntensity':
-        return value === 'none' ? "red" :
-               value === 'light' ? "yellow" : "green"
-      case 'exerciseDuration':
-        return value === 'none' || value === '0-15' ? "red" :
-               value === '15-30' ? "yellow" : "green"
-      default:
-        return "yellow"
-    }
-  }
-
-  const getFeedbackText = (value: any, itemType: string) => {
-    if (!value) return "No data provided"
-    
-    switch (itemType) {
-      case 'activityLevel':
-        return value === 'sedentary' ? "Consider increasing your daily activity level" :
-               value === 'light' ? "Good start, but try to be more active" : "Great activity level!"
-      case 'exerciseIntensity':
-        return value === 'none' ? "Start with light exercise to build habits" :
-               value === 'light' ? "Try to increase intensity gradually" : "Excellent exercise intensity!"
-      // Add other cases as needed
-      default:
-        return "Keep monitoring this metric"
-    }
-  }
-
-  const sections = [
+  const sections: FeedbackSection[] = [
     {
-      title: "Exercise Habits",
-      items: ["activityLevel", "exerciseIntensity", "exerciseDuration"].map(item => ({
-        label: item.replace(/([A-Z])/g, ' $1').trim(),
-        value: answers[item] || 'N/A',
-        feedback: {
-          color: getFeedbackColor(answers[item], item),
-          feedback: getFeedbackText(answers[item], item),
-          recommendations: ["Start with small changes", "Set realistic goals"]
+      title: "Exercise",
+      score: Math.min(100, Math.max(0, healthCalculations.exerciseScore || 0)),
+      items: [
+        {
+          label: "Activity Level",
+          value: String(answers.activityLevel || ''),
+          type: 'activityLevel'
+        },
+        {
+          label: "Exercise Intensity",
+          value: String(answers.exerciseIntensity || ''),
+          type: 'exerciseIntensity'
+        },
+        {
+          label: "Exercise Duration",
+          value: String(answers.exerciseDuration || ''),
+          type: 'exerciseDuration'
         }
-      })),
-      contextualAnalyses: [{
-        severity: healthCalculations.exerciseScore < 60 ? 'warning' : 'info',
-        title: "Exercise Analysis",
-        feedback: `Your exercise score is ${healthCalculations.exerciseScore}%`,
-        recommendations: [
-          "Aim for 150 minutes of moderate exercise per week",
-          "Include both cardio and strength training"
-        ]
-      }]
+      ]
     },
     {
       title: "Diet & Nutrition",
-      items: ["mealFrequency", "dietQuality", "waterIntake"].map(item => ({
-        label: item.replace(/([A-Z])/g, ' $1').trim(),
-        value: answers[item] || 'N/A',
-        feedback: {
-          color: getFeedbackColor(answers[item], item),
-          feedback: getFeedbackText(answers[item], item),
-          recommendations: ["Focus on balanced meals", "Stay hydrated throughout the day"]
+      score: Math.min(100, Math.max(0, healthCalculations.nutritionScore || 0)),
+      items: [
+        {
+          label: "Overall Diet",
+          value: String(answers.diet || ''),
+          type: 'diet'
+        },
+        {
+          label: "Meal Frequency",
+          value: String(answers.mealFrequency || ''),
+          type: 'mealFrequency'
+        },
+        {
+          label: "Last Meal Timing",
+          value: String(answers.lastMeal || ''),
+          type: 'lastMeal'
         }
-      })),
-      contextualAnalyses: [{
-        severity: healthCalculations.nutritionScore < 60 ? 'warning' : 'info',
-        title: "Nutrition Analysis",
-        feedback: `Your nutrition score is ${healthCalculations.nutritionScore}%`,
-        recommendations: [
-          "Include more whole foods in your diet",
-          "Balance your macronutrients"
-        ]
-      }]
+      ]
     },
     {
       title: "Rest & Recovery",
-      items: ["sleepQuality", "sleepDuration", "stressLevel"].map(item => ({
-        label: item.replace(/([A-Z])/g, ' $1').trim(),
-        value: answers[item] || 'N/A',
-        feedback: {
-          color: getFeedbackColor(answers[item], item),
-          feedback: getFeedbackText(answers[item], item),
-          recommendations: ["Establish a bedtime routine", "Practice stress management"]
+      score: Math.min(100, Math.max(0, healthCalculations.sleepScore || 0)),
+      items: [
+        {
+          label: "Sleep Duration",
+          value: String(answers.sleepDuration || ''),
+          type: 'sleepDuration'
+        },
+        {
+          label: "Sleep Quality",
+          value: String(answers.sleepQuality || ''),
+          type: 'sleepQuality'
+        },
+        {
+          label: "Recovery",
+          value: String(answers.recovery || ''),
+          type: 'recovery'
         }
-      })),
-      contextualAnalyses: [{
-        severity: healthCalculations.sleepScore < 60 ? 'warning' : 'info',
-        title: "Recovery Analysis",
-        feedback: `Your recovery score is ${healthCalculations.sleepScore}%`,
-        recommendations: [
-          "Aim for 7-9 hours of sleep",
-          "Create a relaxing sleep environment"
-        ]
-      }]
+      ]
     },
     {
       title: "Mental Health",
-      items: ["mentalWellbeing", "socialConnections", "workLifeBalance"].map(item => ({
-        label: item.replace(/([A-Z])/g, ' $1').trim(),
-        value: answers[item] || 'N/A',
-        feedback: {
-          color: getFeedbackColor(answers[item], item),
-          feedback: getFeedbackText(answers[item], item),
-          recommendations: ["Practice mindfulness", "Maintain social connections"]
+      score: Math.min(100, Math.max(0, healthCalculations.wellbeingScore || 0)),
+      items: [
+        {
+          label: "Stress Level",
+          value: String(answers.stress || ''),
+          type: 'stress'
+        },
+        {
+          label: "Mental Wellbeing",
+          value: String(answers.mentalHealth || ''),
+          type: 'mentalHealth'
+        },
+        {
+          label: "Social Activity",
+          value: String(answers.socializing || ''),
+          type: 'socializing'
         }
-      })),
-      contextualAnalyses: [{
-        severity: healthCalculations.mentalHealthScore < 60 ? 'warning' : 'info',
-        title: "Mental Health Analysis",
-        feedback: `Your mental health score is ${healthCalculations.mentalHealthScore}%`,
-        recommendations: [
-          "Take regular breaks during the day",
-          "Engage in activities you enjoy"
-        ]
-      }]
+      ]
     }
   ];
 
   return (
-    <div className="space-y-8">
-      {sections.map((section) => (
-        <Section
-          key={section.title}
-          title={section.title}
-          items={section.items}
-          contextualAnalyses={section.contextualAnalyses}
-        >
-          <AITriggerButton 
-            assessmentData={{
-              answers,
-              healthCalculations,
-              score: 0
-            }}
-            variant="icon"
-            size="small"
-          />
-        </Section>
-      ))}
+    <div className="max-w-4xl mx-auto space-y-6">
+      {sections.map((section) => {
+        const contextualAnalyses = getContextualAnalyses(section.title, answers);
+        
+        return (
+          <Card key={section.title} className="bg-black/30 backdrop-blur-sm border-gray-800">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6 bg-gradient-to-r from-gray-800 to-transparent p-3 rounded-lg">
+                <h3 className="text-xl font-semibold">{section.title}</h3>
+                <div className="text-lg font-medium">
+                  Score: {Math.min(100, Math.round(section.score))}%
+                </div>
+              </div>
+              <div className="space-y-6">
+                {section.items.map((item) => {
+                  const normalizedValue = normalizeValue(item.value);
+                  const displayValue = formatDisplayValue(item.value);
+                  return (
+                    <FeedbackItem
+                      key={item.label}
+                      label={item.label}
+                      value={displayValue}
+                      color={getFeedbackColor(normalizedValue, item.type)}
+                      feedback={getFeedbackText(item.type, normalizedValue)}
+                    />
+                  );
+                })}
+              </div>
+              
+              {contextualAnalyses && contextualAnalyses.length > 0 && (
+                <div className="mt-6 pt-6 border-t border-gray-800">
+                  <ContextualAlert analysis={contextualAnalyses} />
+                </div>
+              )}
+            </div>
+          </Card>
+        );
+      })}
     </div>
-  )
+  );
 } 

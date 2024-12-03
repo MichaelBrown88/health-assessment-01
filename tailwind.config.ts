@@ -9,6 +9,7 @@ export default {
   theme: {
     extend: {
       colors: theme.colors,
+      spacing: theme.spacing,
       fontFamily: theme.fonts,
       borderRadius: theme.borderRadius,
       transitionProperty: theme.transitions,

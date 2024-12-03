@@ -1,6 +1,7 @@
-import { useMemo } from 'react'
-import type { AnswerType, HealthCalculations } from '@/types/results'
-import { calculateHealthMetrics } from '@/utils/healthUtils'
+import { useState, useEffect } from 'react'
+import { calculateHealthMetrics } from '@/utils/health'
+import type { AnswerType } from '@/types/Question'
+import type { HealthCalculations } from '@/types/results'
 
 export function useHealthCalculations(answers: AnswerType): HealthCalculations {
   return useMemo(() => {

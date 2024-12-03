@@ -1,96 +1,113 @@
-import type { HealthCalculations } from '@/types'
+import type { AnswerType, HealthCalculations } from '@/types/health';
 
-interface SummaryInput {
+export function generateSummary(healthCalcs: HealthCalculations, answers?: AnswerType) {
+  const strengths: string[] = [];
+  const improvements: string[] = [];
+  const nextSteps: string[] = [];
+
+  // Add strengths based on scores and calculations
+  if (healthCalcs.exerciseScore >= 70) {
+    strengths.push('Strong activity level and exercise habits');
+  }
+  if (healthCalcs.nutritionScore >= 70) {
+    strengths.push('Healthy eating habits and nutrition choices');
+  }
+  if (healthCalcs.sleepScore >= 70) {
+    strengths.push('Good sleep quality and recovery patterns');
+  }
+  if (healthCalcs.wellbeingScore >= 70) {
+    strengths.push('Effective stress management and mental wellbeing');
+  }
+
+  // Add improvements based on scores
+  if (healthCalcs.exerciseScore < 60) {
+    improvements.push('Increase daily activity level and structured exercise');
+  }
+  if (healthCalcs.nutritionScore < 60) {
+    improvements.push('Improve nutrition and eating habits');
+  }
+  if (healthCalcs.sleepScore < 60) {
+    improvements.push('Enhance sleep quality and recovery practices');
+  }
+  if (healthCalcs.wellbeingScore < 60) {
+    improvements.push('Focus on stress management and mental wellbeing');
+  }
+
+  // Add next steps based on scores and current status
+  if (healthCalcs.exerciseScore < 70) {
+    nextSteps.push("Start with small, manageable increases in daily movement and activity.");
+  }
+  if (healthCalcs.nutritionScore < 70) {
+    nextSteps.push("Focus on incorporating more whole, nutrient-rich foods into your meals.");
+  }
+  if (healthCalcs.sleepScore < 70) {
+    nextSteps.push("Establish a consistent sleep schedule and bedtime routine.");
+  }
+  if (healthCalcs.wellbeingScore < 70) {
+    nextSteps.push("Practice regular stress management techniques and prioritize mental health.");
+  }
+
+  // Add default next step if none were added
+  if (nextSteps.length === 0) {
+    nextSteps.push("Maintain your current healthy habits while looking for ways to optimize further.");
+  }
+
+  // Add tracking reminder
+  nextSteps.push("Track your progress regularly and make adjustments based on the feedback in each section.");
+
+  return {
+    strengths: strengths.length > 0 ? strengths : ["Complete the assessment to identify your strengths"],
+    improvements: improvements.length > 0 ? improvements : ["Complete the assessment to identify areas for improvement"],
+    nextSteps
+  };
+}
+
+interface StructuredSummaryInput {
   exercise: number;
   nutrition: number;
   sleep: number;
   mentalHealth: number;
-  healthCalculations?: HealthCalculations;
+  healthCalculations: HealthCalculations;
+  answers: AnswerType;
 }
 
-interface SectionFeedback {
-  message: string;
-  recommendations?: string[];
-}
-
-interface StructuredSummary {
-  bodyComposition?: SectionFeedback;
-  exercise?: SectionFeedback;
-  nutrition?: SectionFeedback;
-  sleep?: SectionFeedback;
-  mentalHealth?: SectionFeedback;
-}
-
-export function generateStructuredSummary(data: SummaryInput): StructuredSummary {
-  const summary: StructuredSummary = {};
-
-  // Body Composition feedback
-  if (data.healthCalculations?.bmi) {
-    summary.bodyComposition = {
-      message: generateBodyCompositionMessage(data.healthCalculations),
-      recommendations: generateBodyCompositionRecommendations(data.healthCalculations)
-    };
-  }
-
-  // Exercise feedback
-  if (data.exercise !== undefined) {
-    summary.exercise = {
-      message: generateExerciseFeedback(data.exercise),
-      recommendations: generateExerciseRecommendations(data.exercise)
-    };
-  }
-
-  return summary;
-}
-
-function generateBodyCompositionMessage(healthCalcs: HealthCalculations): string {
-  const { bmi, bmiCategory } = healthCalcs
-  if (!bmi || !bmiCategory) return "Unable to calculate body composition metrics."
+export function generateStructuredSummary(input: StructuredSummaryInput) {
+  const { exercise, nutrition, sleep, mentalHealth, healthCalculations, answers } = input;
   
-  return `Your BMI of ${bmi.toFixed(1)} puts you in the ${bmiCategory} category. ${
-    bmiCategory === "Normal" 
-      ? "This is within the healthy range."
-      : "This suggests room for improvement in your body composition."
-  }`
-}
+  const sections = {
+    exercise: {
+      message: exercise >= 70 
+        ? "Your exercise habits show a strong commitment to physical activity."
+        : "There's room to enhance your exercise routine for better results.",
+      recommendations: exercise >= 70 
+        ? ["Maintain your consistent activity level", "Consider adding variety to your workouts", "Focus on proper form and recovery"]
+        : ["Start with manageable increases in activity", "Find activities you enjoy", "Build a consistent routine"]
+    },
+    nutrition: {
+      message: nutrition >= 70
+        ? "Your nutrition habits support good health and energy levels."
+        : "Improving your nutrition could enhance your overall wellbeing.",
+      recommendations: nutrition >= 70
+        ? ["Continue making balanced food choices", "Maintain meal timing consistency", "Stay hydrated throughout the day"]
+        : ["Focus on whole, nutrient-rich foods", "Plan your meals ahead", "Monitor portion sizes"]
+    },
+    sleep: {
+      message: sleep >= 70
+        ? "Your sleep patterns support good recovery and energy levels."
+        : "Enhancing your sleep quality could improve your overall health.",
+      recommendations: sleep >= 70
+        ? ["Maintain your consistent sleep schedule", "Continue good sleep hygiene", "Monitor energy levels"]
+        : ["Establish a regular sleep schedule", "Create a relaxing bedtime routine", "Optimize your sleep environment"]
+    },
+    mentalHealth: {
+      message: mentalHealth >= 70
+        ? "Your mental wellbeing practices show good self-awareness."
+        : "Supporting your mental health could enhance overall wellbeing.",
+      recommendations: mentalHealth >= 70
+        ? ["Continue stress management practices", "Maintain social connections", "Practice regular self-care"]
+        : ["Develop stress management techniques", "Build a support system", "Consider professional guidance"]
+    }
+  };
 
-function generateBodyCompositionRecommendations(healthCalcs: HealthCalculations): string[] {
-  const { bmiCategory } = healthCalcs
-  const recommendations = []
-  
-  switch(bmiCategory) {
-    case "Underweight":
-      recommendations.push("Focus on nutrient-dense foods to gain healthy weight")
-      recommendations.push("Consider strength training to build muscle mass")
-      break
-    case "Overweight":
-    case "Obese":
-      recommendations.push("Create a sustainable caloric deficit through diet and exercise")
-      recommendations.push("Focus on whole, unprocessed foods")
-      break
-    default:
-      recommendations.push("Maintain your healthy habits")
-      recommendations.push("Consider body composition goals beyond BMI")
-  }
-  
-  return recommendations
-}
-
-function generateExerciseFeedback(score: number): string {
-  if (score >= 80) return "Your exercise habits are excellent! You're maintaining a good balance of activity."
-  if (score >= 60) return "You have a decent exercise routine, but there's room for improvement."
-  return "Your exercise level could use some improvement to better support your health goals."
-}
-
-function generateExerciseRecommendations(score: number): string[] {
-  const recommendations = []
-  if (score < 80) {
-    recommendations.push("Try to increase your activity level gradually")
-    recommendations.push("Consider incorporating more structured exercise into your routine")
-  }
-  if (score < 60) {
-    recommendations.push("Start with short walks and gradually increase duration")
-    recommendations.push("Consider consulting a fitness professional for guidance")
-  }
-  return recommendations
+  return sections;
 }

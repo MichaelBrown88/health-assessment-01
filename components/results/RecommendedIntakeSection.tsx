@@ -3,11 +3,11 @@
 import { InfoIcon } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { HealthMetricsCard } from "./HealthMetricsCard"
-import type { HealthCalculations } from "@/types/results"
+import type { HealthCalculations, AnswerType } from "@/types/results"
 
 interface RecommendedIntakeSectionProps {
   healthCalculations: HealthCalculations
-  answers: Record<string, any>
+  answers: AnswerType
   score?: number
 }
 

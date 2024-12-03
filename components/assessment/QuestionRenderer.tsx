@@ -5,11 +5,12 @@ import { Slider } from "@/components/ui/slider"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Checkbox } from "@/components/ui/checkbox"
 import type { Question } from "@/types/questions"
+import type { AnswerType } from "@/types/results"
 
 interface QuestionRendererProps {
   question: Question;
   onAnswer: (answer: string | number | string[]) => void;
-  answers: Record<string, string | number | string[]>;
+  answers: AnswerType;
   resetMessage?: boolean;
 }
 

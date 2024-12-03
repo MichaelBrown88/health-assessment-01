@@ -1,12 +1,9 @@
 export interface ContextualAnalysis {
-  warning: boolean;
-  severity: 'warning' | 'alert' | 'info';
+  severity: 'info' | 'warning';
   title: string;
   feedback: string;
   recommendations: string[];
-  type?: string;
-  analysis?: string;
-  recommendation?: string;
+  warning?: string;
 }
 
 export interface SectionFeedback {
