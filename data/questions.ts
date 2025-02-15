@@ -173,13 +173,14 @@ export const questions: Question[] = [
   },
   {
     id: "sleepDuration",
-    question: "How many hours of sleep do you get on average?",
+    question: "How many hours do you typically sleep per night?",
+    subText: "Consider your average sleep duration over the past month",
     type: "radio",
     options: [
-      { value: "less-than-6", label: "Less than 6 hours" },
-      { value: "6-7", label: "6-7 hours" },
-      { value: "7-8", label: "7-8 hours" },
-      { value: "more-than-8", label: "More than 8 hours" },
+      { value: "less-than-5", label: "Less than 5 hours" },
+      { value: "5-7", label: "5-7 hours" },
+      { value: "7-9", label: "7-9 hours" },
+      { value: "more-than-9", label: "More than 9 hours" },
     ],
   },
   {

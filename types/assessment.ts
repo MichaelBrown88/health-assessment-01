@@ -58,7 +58,7 @@ export interface AssessmentAnswers extends AnswerType {
   carbPreference?: 'very-low' | 'low' | 'moderate' | 'high' | 'very-high';
 
   // Sleep & Recovery
-  sleepDuration?: 'less-than-5' | '5-6' | '6-7' | '7-8' | '8-9' | 'more-than-9';
+  sleepDuration?: 'less-than-5' | '5-7' | '7-9' | 'more-than-9';
   sleepQuality?: 'poor' | 'fair' | 'good' | 'excellent';
 
   // Mental Health

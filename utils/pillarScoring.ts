@@ -181,7 +181,12 @@ function calculateNutritionScore(answers: AnswerType): PillarScore {
 function calculateRecoveryScore(answers: AnswerType): PillarScore {
   let score = 0;
   const scoreMap = {
-    sleepDuration: { "less-than-6": 0, "6-7": 4, "7-8": 8, "more-than-8": 6 },
+    sleepDuration: { 
+      "less-than-5": 0,
+      "5-7": 5,
+      "7-9": 10,
+      "more-than-9": 7
+    },
     sleepQuality: { poor: 0, fair: 3, good: 6, excellent: 8 },
     recovery: { poor: 0, fair: 2, good: 3, excellent: 4 }
   };
