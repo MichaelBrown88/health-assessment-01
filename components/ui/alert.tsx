@@ -1,5 +1,6 @@
 import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
+import { AlertTriangle, CheckCircle, Info, XCircle } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
@@ -11,6 +12,9 @@ const alertVariants = cva(
         default: "bg-background text-foreground",
         destructive:
           "border-destructive/50 text-destructive dark:border-destructive [&>svg]:text-destructive",
+        success: "border-green-500/50 text-green-500 dark:border-green-500 [&>svg]:text-green-500",
+        warning: "border-yellow-500/50 text-yellow-500 dark:border-yellow-500 [&>svg]:text-yellow-500",
+        info: "border-blue-500/50 text-blue-500 dark:border-blue-500 [&>svg]:text-blue-500",
       },
     },
     defaultVariants: {
@@ -19,18 +23,34 @@ const alertVariants = cva(
   }
 )
 
-const Alert = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement> & VariantProps<typeof alertVariants>
->(({ className, variant, ...props }, ref) => (
-  <div
-    ref={ref}
-    role="alert"
-    className={cn(alertVariants({ variant }), className)}
-    {...props}
-  />
-))
-Alert.displayName = "Alert"
+const iconMap = {
+  default: Info,
+  destructive: XCircle,
+  success: CheckCircle,
+  warning: AlertTriangle,
+  info: Info,
+}
+
+export interface AlertProps extends React.HTMLAttributes<HTMLDivElement>, VariantProps<typeof alertVariants> {
+  title?: string
+  description?: string
+  icon?: boolean
+}
+
+export function Alert({ className, variant, title, description, icon = true, children, ...props }: AlertProps) {
+  const Icon = iconMap[variant || "default"]
+  return (
+    <div className={cn(alertVariants({ variant }), className)} {...props} role="alert">
+      {icon && <Icon className="h-4 w-4" />}
+      {(title || description) ? (
+        <div className="flex flex-col space-y-1">
+          {title && <h5 className="font-medium leading-none tracking-tight">{title}</h5>}
+          {description && <div className="text-sm [&_p]:leading-relaxed">{description}</div>}
+        </div>
+      ) : children}
+    </div>
+  )
+}
 
 const AlertTitle = React.forwardRef<
   HTMLParagraphElement,
@@ -56,4 +76,4 @@ const AlertDescription = React.forwardRef<
 ))
 AlertDescription.displayName = "AlertDescription"
 
-export { Alert, AlertTitle, AlertDescription }
+export { AlertTitle, AlertDescription }

@@ -2,6 +2,8 @@
 
 import { useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
+import { Alert } from '@/components/ui/alert'
+import { handleError } from '@/utils/error-handling'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -15,7 +17,7 @@ interface AuthFormProps {
 export function AuthForm({ mode, onSuccess, isPremiumFlow = false }: AuthFormProps) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<{ message: string; severity: string } | null>(null)
   const [loading, setLoading] = useState(false)
   const { signIn, signUp, createAdminAccount } = useAuth()
 
@@ -34,7 +36,8 @@ export function AuthForm({ mode, onSuccess, isPremiumFlow = false }: AuthFormPro
       }
       onSuccess()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred')
+      const errorResponse = handleError(err)
+      setError(errorResponse)
     } finally {
       setLoading(false)
     }
@@ -42,6 +45,14 @@ export function AuthForm({ mode, onSuccess, isPremiumFlow = false }: AuthFormPro
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {error && (
+        <Alert 
+          variant={error.severity === 'warning' ? 'warning' : 'destructive'}
+          title={mode === 'login' ? 'Sign In Error' : mode === 'signup' ? 'Sign Up Error' : 'Create Admin Account Error'}
+          description={error.message}
+        />
+      )}
+      
       <div className="space-y-2">
         <Label htmlFor="email">Email</Label>
         <Input
@@ -69,12 +80,6 @@ export function AuthForm({ mode, onSuccess, isPremiumFlow = false }: AuthFormPro
           className="bg-black/50"
         />
       </div>
-
-      {error && (
-        <div className="bg-red-500/10 border border-red-500/20 text-red-500 p-2 rounded-md">
-          {error}
-        </div>
-      )}
 
       <Button 
         type="submit" 

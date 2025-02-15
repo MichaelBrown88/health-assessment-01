@@ -4,9 +4,10 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { getUserAssessments } from '@/lib/db'
 import type { Assessment, ChartData } from '@/types/assessment'
-import { ProgressChart } from '@/components/ProgressChart'
-import { StatCards } from '@/components/StatCards'
+import { ProgressChart } from '@/components/dashboard/ProgressChart'
+import { StatCards } from '@/components/dashboard/StatCards'
 import { RecentAchievements } from '@/components/dashboard/RecentAchievements'
+import { SpaceTheme } from '@/components/layout/SpaceTheme'
 import { 
   Trophy, 
   Award, 

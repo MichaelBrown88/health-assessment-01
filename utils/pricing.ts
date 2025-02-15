@@ -21,8 +21,8 @@ export const PRICING_FEATURES = [
   "Early Access to New Features"
 ];
 
-export function detectUserCurrency(): string {
-  if (typeof window === 'undefined') return 'USD';
+export function detectUserCurrency(): CurrencyConfig {
+  if (typeof window === 'undefined') return CURRENCY_CONFIG['USD'];
   
   try {
     const userLocale = navigator.language;
@@ -30,10 +30,11 @@ export function detectUserCurrency(): string {
       style: 'currency', 
       currency: 'USD' 
     }).resolvedOptions().currency;
-    
-    return currency && CURRENCY_CONFIG[currency] ? currency : 'USD';
-  } catch {
-    return 'USD';
+
+    return CURRENCY_CONFIG[currency] || CURRENCY_CONFIG['USD'];
+  } catch (error) {
+    console.warn('Failed to detect user currency:', error);
+    return CURRENCY_CONFIG['USD'];
   }
 }
 
