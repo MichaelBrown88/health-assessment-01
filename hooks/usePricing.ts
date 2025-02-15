@@ -3,24 +3,29 @@ import { detectUserCurrency, CurrencyConfig, CURRENCY_CONFIG } from '@/utils/pri
 
 export function usePricing() {
   const [isYearly, setIsYearly] = useState(false)
-  const [currency, setCurrency] = useState<CurrencyConfig | null>(null)
+  const [currency, setCurrency] = useState<CurrencyConfig>(CURRENCY_CONFIG['USD'])
 
   useEffect(() => {
-    detectUserCurrency().then(setCurrency)
+    const detectedCurrency = detectUserCurrency();
+    setCurrency(detectedCurrency);
   }, [])
 
   const toggleCurrency = () => {
     setCurrency(prev => 
-      prev?.code === 'GBP' ? CURRENCY_CONFIG['USD'] :
-      prev?.code === 'USD' ? CURRENCY_CONFIG['EUR'] :
+      prev.code === 'GBP' ? CURRENCY_CONFIG['USD'] :
+      prev.code === 'USD' ? CURRENCY_CONFIG['EUR'] :
       CURRENCY_CONFIG['GBP']
     )
   }
 
+  const toggleBillingCycle = () => {
+    setIsYearly(prev => !prev)
+  }
+
   return {
     isYearly,
-    setIsYearly,
     currency,
-    toggleCurrency
+    toggleCurrency,
+    toggleBillingCycle
   }
 } 

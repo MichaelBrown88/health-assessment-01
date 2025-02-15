@@ -20,15 +20,16 @@ interface PremiumFeaturesProps {
 
 export function PremiumFeatures({ onUnlock }: PremiumFeaturesProps) {
   const [isYearly, setIsYearly] = useState(false)
-  const [currency, setCurrency] = useState<CurrencyConfig | null>(null)
+  const [currency, setCurrency] = useState('USD')
   
   useEffect(() => {
-    detectUserCurrency().then(setCurrency)
+    const userCurrency = detectUserCurrency()
+    setCurrency(userCurrency)
   }, [])
 
   if (!currency) return null;
 
-  const monthlyPrice = BASE_MONTHLY_PRICE * currency.exchangeRate;
+  const monthlyPrice = BASE_MONTHLY_PRICE * CURRENCY_CONFIG[currency].exchangeRate;
   const yearlyPricePerMonth = monthlyPrice * (1 - YEARLY_DISCOUNT);
   const yearlyPrice = yearlyPricePerMonth * 12;
   const savings = monthlyPrice * 12 - yearlyPrice;
@@ -75,13 +76,13 @@ export function PremiumFeatures({ onUnlock }: PremiumFeaturesProps) {
           <p>By continuing, you agree to our Terms of Service and Privacy Policy</p>
           <button 
             onClick={() => setCurrency(prev => 
-              prev?.code === 'GBP' ? CURRENCY_CONFIG['USD'] :
-              prev?.code === 'USD' ? CURRENCY_CONFIG['EUR'] :
+              prev === 'GBP' ? CURRENCY_CONFIG['USD'] :
+              prev === 'USD' ? CURRENCY_CONFIG['EUR'] :
               CURRENCY_CONFIG['GBP']
             )}
             className="text-gray-400 hover:text-white"
           >
-            {currency.code}
+            {currency}
           </button>
         </div>
       </div>

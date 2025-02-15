@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { PaywallModal } from '@/components/premium/PaywallModal';
 import { Button } from '@/components/ui/button';
 import { Lock, Send, Loader2, X } from 'lucide-react';
+import { generateAIResponse } from '@/utils/ai-utils'
 
 interface Message {
   id: string;

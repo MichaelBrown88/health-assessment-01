@@ -12,7 +12,7 @@ const STATIC_STARS = Array.from({ length: 50 }, (_, i) => ({
 
 export function SpaceTheme() {
   return (
-    <div className="fixed inset-0 z-10">
+    <div className="fixed inset-0 z-0">
       <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <radialGradient id="mesh-grad-1" cx="20%" cy="20%" r="50%">

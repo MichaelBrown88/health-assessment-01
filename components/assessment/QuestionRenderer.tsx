@@ -4,7 +4,7 @@ import React from 'react'
 import { Slider } from "@/components/ui/slider"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Checkbox } from "@/components/ui/checkbox"
-import type { Question } from '@/types/questions'
+import type { Question } from "@/types/questions"
 
 interface QuestionRendererProps {
   question: Question;
@@ -19,7 +19,7 @@ export function QuestionRenderer({ question, onAnswer, answers, resetMessage }: 
       return (
         <div className="question-container">
           <RadioGroup onValueChange={onAnswer} value={answers[question.id] as string || ''}>
-            {question.options?.map((option) => (
+            {question.options?.map((option: { value: string; label: string }) => (
               <label
                 key={option.value}
                 htmlFor={option.value}
@@ -38,7 +38,7 @@ export function QuestionRenderer({ question, onAnswer, answers, resetMessage }: 
       return (
         <div className="question-container">
           <p className="text-sm text-[#f7f7f7] opacity-70 mb-2">Select all that apply</p>
-          {question.options?.map((option) => (
+          {question.options?.map((option: { value: string; label: string }  ) => (
             <label
               key={option.value}
               htmlFor={option.value}

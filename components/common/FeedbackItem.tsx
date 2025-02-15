@@ -17,7 +17,7 @@ const iconMap = {
   red: <XCircle className="w-5 h-5 text-red-500 flex-shrink-0" />,
 };
 
-export const FeedbackItem: React.FC<FeedbackItemProps> = ({ label, value, feedback }) => {
+export const FeedbackItem = ({ label, value, feedback }: FeedbackItemProps) => {
   return (
     <div className="bg-black/20 rounded-lg mb-2">
       <div className="flex items-center justify-between p-2 bg-gray-700/50">

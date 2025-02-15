@@ -1,100 +1,96 @@
-interface FeedbackRule {
-  condition: (score: number) => boolean;
-  feedback: (score: number) => {
-    score: number;
-    message: string;
-    recommendations: string[];
-  };
-}
+import type { HealthCalculations } from '@/types'
 
-interface HealthCalculations {
-  bmi: number | null;
-  bmiCategory: string | null;
-  recommendedCalories: number | null;
-  proteinGrams: number | null;
-  carbGrams: number | null;
-  fatGrams: number | null;
-  idealWeightLow: number | null;
-  idealWeightHigh: number | null;
-}
-
-const exerciseFeedback: FeedbackRule[] = [
-  {
-    condition: (score: number) => score >= 80,
-    feedback: (score: number) => ({
-      score,
-      message: "Your exercise habits are excellent. You're maintaining a consistent and balanced routine.",
-      recommendations: [
-        "Consider adding variety to prevent plateaus",
-        "Focus on recovery to maintain performance",
-        "Set new challenging goals"
-      ]
-    })
-  },
-  {
-    condition: (score: number) => score >= 60,
-    feedback: (score: number) => ({
-      score,
-      message: "You have a good foundation for exercise, but there's room to increase intensity or frequency.",
-      recommendations: [
-        "Gradually increase workout intensity",
-        "Add one more session per week",
-        "Include both cardio and strength training"
-      ]
-    })
-  },
-  {
-    condition: (score: number) => score < 60,
-    feedback: (score: number) => ({
-      score,
-      message: "Your exercise routine needs attention. Consider establishing a regular workout schedule.",
-      recommendations: [
-        "Start with 2-3 sessions per week",
-        "Begin with walking or light exercises",
-        "Set realistic, achievable goals"
-      ]
-    })
-  }
-];
-
-// Add similar arrays for other sections
-const nutritionFeedback: FeedbackRule[] = [
-  // ... nutrition feedback rules
-];
-
-const sleepFeedback: FeedbackRule[] = [
-  // ... sleep feedback rules
-];
-
-const mentalHealthFeedback: FeedbackRule[] = [
-  // ... mental health feedback rules
-];
-
-export function generateStructuredSummary(scores: {
+interface SummaryInput {
   exercise: number;
   nutrition: number;
   sleep: number;
   mentalHealth: number;
   healthCalculations?: HealthCalculations;
-}) {
-  const summary = {
-    exercise: exerciseFeedback.find(rule => rule.condition(scores.exercise))?.feedback(scores.exercise),
-    nutrition: nutritionFeedback.find(rule => rule.condition(scores.nutrition))?.feedback(scores.nutrition),
-    sleep: sleepFeedback.find(rule => rule.condition(scores.sleep))?.feedback(scores.sleep),
-    mentalHealth: mentalHealthFeedback.find(rule => rule.condition(scores.mentalHealth))?.feedback(scores.mentalHealth),
-    bodyComposition: scores.healthCalculations ? {
-      score: scores.healthCalculations.bmi || 0,
-      message: `Your BMI is ${scores.healthCalculations.bmi?.toFixed(1)} (${scores.healthCalculations.bmiCategory}). 
-                To reach your goals, aim for ${scores.healthCalculations.recommendedCalories} calories per day with 
-                ${scores.healthCalculations.proteinGrams}g protein, ${scores.healthCalculations.carbGrams}g carbs, 
-                and ${scores.healthCalculations.fatGrams}g healthy fats.`,
-      recommendations: [
-        `Target weight range: ${scores.healthCalculations.idealWeightLow?.toFixed(1)} - ${scores.healthCalculations.idealWeightHigh?.toFixed(1)} kg`,
-        `Daily calorie target: ${scores.healthCalculations.recommendedCalories} calories`,
-        `Macronutrient split: ${scores.healthCalculations.proteinGrams}g protein, ${scores.healthCalculations.carbGrams}g carbs, ${scores.healthCalculations.fatGrams}g fats`
-      ]
-    } : null
-  };
+}
+
+interface SectionFeedback {
+  message: string;
+  recommendations?: string[];
+}
+
+interface StructuredSummary {
+  bodyComposition?: SectionFeedback;
+  exercise?: SectionFeedback;
+  nutrition?: SectionFeedback;
+  sleep?: SectionFeedback;
+  mentalHealth?: SectionFeedback;
+}
+
+export function generateStructuredSummary(data: SummaryInput): StructuredSummary {
+  const summary: StructuredSummary = {};
+
+  // Body Composition feedback
+  if (data.healthCalculations?.bmi) {
+    summary.bodyComposition = {
+      message: generateBodyCompositionMessage(data.healthCalculations),
+      recommendations: generateBodyCompositionRecommendations(data.healthCalculations)
+    };
+  }
+
+  // Exercise feedback
+  if (data.exercise !== undefined) {
+    summary.exercise = {
+      message: generateExerciseFeedback(data.exercise),
+      recommendations: generateExerciseRecommendations(data.exercise)
+    };
+  }
 
   return summary;
+}
+
+function generateBodyCompositionMessage(healthCalcs: HealthCalculations): string {
+  const { bmi, bmiCategory } = healthCalcs
+  if (!bmi || !bmiCategory) return "Unable to calculate body composition metrics."
+  
+  return `Your BMI of ${bmi.toFixed(1)} puts you in the ${bmiCategory} category. ${
+    bmiCategory === "Normal" 
+      ? "This is within the healthy range."
+      : "This suggests room for improvement in your body composition."
+  }`
+}
+
+function generateBodyCompositionRecommendations(healthCalcs: HealthCalculations): string[] {
+  const { bmiCategory } = healthCalcs
+  const recommendations = []
+  
+  switch(bmiCategory) {
+    case "Underweight":
+      recommendations.push("Focus on nutrient-dense foods to gain healthy weight")
+      recommendations.push("Consider strength training to build muscle mass")
+      break
+    case "Overweight":
+    case "Obese":
+      recommendations.push("Create a sustainable caloric deficit through diet and exercise")
+      recommendations.push("Focus on whole, unprocessed foods")
+      break
+    default:
+      recommendations.push("Maintain your healthy habits")
+      recommendations.push("Consider body composition goals beyond BMI")
+  }
+  
+  return recommendations
+}
+
+function generateExerciseFeedback(score: number): string {
+  if (score >= 80) return "Your exercise habits are excellent! You're maintaining a good balance of activity."
+  if (score >= 60) return "You have a decent exercise routine, but there's room for improvement."
+  return "Your exercise level could use some improvement to better support your health goals."
+}
+
+function generateExerciseRecommendations(score: number): string[] {
+  const recommendations = []
+  if (score < 80) {
+    recommendations.push("Try to increase your activity level gradually")
+    recommendations.push("Consider incorporating more structured exercise into your routine")
+  }
+  if (score < 60) {
+    recommendations.push("Start with short walks and gradually increase duration")
+    recommendations.push("Consider consulting a fitness professional for guidance")
+  }
+  return recommendations
 }

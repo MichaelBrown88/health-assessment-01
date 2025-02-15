@@ -6,9 +6,13 @@ import {
   query, 
   orderBy, 
   deleteDoc, 
-  setDoc 
+  setDoc, 
+  updateDoc, 
+  serverTimestamp, 
+  where, 
+  addDoc 
 } from 'firebase/firestore';
-import type { AssessmentResult } from '@/types';
+import type {AssessmentResult} from '@/types';
 
 export interface AssessmentData {
   userId: string;
@@ -91,3 +95,58 @@ export async function clearUserAssessments(userId: string) {
     throw error;
   }
 }
+
+export async function convertLeadToUser(email: string, userId: string) {
+  try {
+    // Query for the lead with matching email
+    const leadsRef = collection(db, 'leads');
+    const q = query(leadsRef, where('email', '==', email));
+    const querySnapshot = await getDocs(q);
+
+    if (!querySnapshot.empty) {
+      const leadDoc = querySnapshot.docs[0];
+      const leadData = leadDoc.data();
+
+      // Save assessment data to user's assessments
+      if (leadData.answers && leadData.assessmentResults) {
+        await saveAssessmentResult(userId, {
+          answers: leadData.answers,
+          healthCalculations: leadData.assessmentResults.healthCalculations,
+          score: leadData.assessmentResults.score,
+          summary: leadData.assessmentResults.summary,
+          timestamp: leadData.timestamp || Date.now()
+        });
+      }
+
+      // Update lead status
+      await updateDoc(doc(db, 'leads', leadDoc.id), {
+        status: 'converted',
+        userId: userId,
+        convertedAt: serverTimestamp()
+      });
+    }
+  } catch (error) {
+    console.error('Error converting lead:', error);
+    throw error;
+  }
+}
+
+export const saveLeadData = async (data: {
+  name: string;
+  email: string;
+  answers: Record<string, string | number | boolean | string[]>;
+  assessmentResults: {
+    score: number;
+    healthCalculations: Record<string, string | number | null>;
+    summary: Record<string, string>;
+  };
+  timestamp: number;
+}) => {
+  const leadsRef = collection(db, 'leads');
+  const docRef = await addDoc(leadsRef, {
+    ...data,
+    status: 'new',
+    createdAt: serverTimestamp()
+  });
+  return { id: docRef.id, ...data };
+};

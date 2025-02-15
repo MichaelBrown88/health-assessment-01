@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useRouter } from 'next/navigation'
+import { convertLeadToUser } from '@/lib/db';
 
 interface SignUpProps {
   onSuccess: () => void
@@ -33,7 +34,11 @@ export function SignUp({ onSuccess }: SignUpProps) {
     setIsLoading(true)
 
     try {
-      await signUp(email, password)
+      const userCredential = await signUp(email, password)
+      // Convert lead if exists
+      if (userCredential.user) {
+        await convertLeadToUser(email, userCredential.user.uid)
+      }
       onSuccess()
       router.push('/welcome')
     } catch (error: unknown) {

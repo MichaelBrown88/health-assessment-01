@@ -1,65 +1,46 @@
-type CurrencyConfig = {
+export const BASE_MONTHLY_PRICE = 9.99;
+export const YEARLY_DISCOUNT = 0.2; // 20% discount
+
+export interface CurrencyConfig {
   symbol: string;
   code: string;
-  position: 'before' | 'after';
-  exchangeRate: number;
-  roundTo: number;
-};
-
-const CURRENCY_CONFIG: { [key: string]: CurrencyConfig } = {
-  'GB': {
-    symbol: '£',
-    code: 'GBP',
-    position: 'before',
-    exchangeRate: 1,
-    roundTo: 1
-  },
-  'US': {
-    symbol: '$',
-    code: 'USD',
-    position: 'before',
-    exchangeRate: 1.27,
-    roundTo: 1
-  },
-  'EU': {
-    symbol: '€',
-    code: 'EUR',
-    position: 'after',
-    exchangeRate: 1.17,
-    roundTo: 1
-  }
-};
-
-export const BASE_MONTHLY_PRICE = 5;
-export const YEARLY_DISCOUNT = 0.25; // 25% discount
-
-export function roundPrice(price: number, roundTo: number): number {
-  return Math.ceil(price / roundTo) * roundTo;
+  rate: number;
 }
 
-export function formatPrice(amount: number, currency: CurrencyConfig): string {
-  const roundedAmount = roundPrice(amount, currency.roundTo);
-  return currency.position === 'before' 
-    ? `${currency.symbol}${roundedAmount}`
-    : `${roundedAmount}${currency.symbol}`;
-}
+export const CURRENCY_CONFIG: Record<string, CurrencyConfig> = {
+  USD: { symbol: '$', code: 'USD', rate: 1 },
+  EUR: { symbol: '€', code: 'EUR', rate: 0.85 },
+  GBP: { symbol: '£', code: 'GBP', rate: 0.73 },
+};
 
-export async function detectUserCurrency(): Promise<CurrencyConfig> {
+export const PRICING_FEATURES = [
+  "Personalized AI Health Coach",
+  "Advanced Analytics & Progress Tracking",
+  "Custom Meal & Exercise Plans",
+  "Priority Support",
+  "Early Access to New Features"
+];
+
+export function detectUserCurrency(): CurrencyConfig {
+  if (typeof window === 'undefined') return CURRENCY_CONFIG['USD'];
+  
   try {
-    const response = await fetch('https://ipapi.co/json/');
-    const data = await response.json();
-    const countryCode = data.country_code;
-    
-    // Map country to currency region
-    const currencyRegion = 
-      countryCode === 'GB' ? 'GB' :
-      countryCode === 'US' ? 'US' :
-      ['DE', 'FR', 'IT', 'ES', 'NL'].includes(countryCode) ? 'EU' :
-      'GB'; // Default to GBP
-    
-    return CURRENCY_CONFIG[currencyRegion];
+    const userLocale = navigator.language;
+    const currency = new Intl.NumberFormat(userLocale, { 
+      style: 'currency', 
+      currency: 'USD' 
+    }).resolvedOptions().currency;
+
+    return CURRENCY_CONFIG[currency] || CURRENCY_CONFIG['USD'];
   } catch (error) {
-    console.error('Error detecting currency:', error);
-    return CURRENCY_CONFIG['GB']; // Default to GBP
+    console.warn('Failed to detect user currency:', error);
+    return CURRENCY_CONFIG['USD'];
   }
+}
+
+export function formatPrice(price: number, currencyCode: string = 'USD'): string {
+  const config = CURRENCY_CONFIG[currencyCode] || CURRENCY_CONFIG.USD;
+  const convertedPrice = price * config.rate;
+  
+  return `${config.symbol}${convertedPrice.toFixed(2)}`;
 } 

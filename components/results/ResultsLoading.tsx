@@ -1,28 +1,26 @@
+'use client'
+
+import { Skeleton } from "@/components/ui/skeleton"
+import { SpaceTheme } from "@/components/layout/SpaceTheme"
+
 export function ResultsLoading() {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 space-y-8">
-      <div className="animate-pulse space-y-8 w-full max-w-4xl">
-        {/* Score Overview Skeleton */}
-        <div className="bg-black/30 rounded-lg p-8 space-y-4">
-          <div className="h-16 bg-gray-700/50 rounded-full w-32 mx-auto" />
-          <div className="h-4 bg-gray-700/50 rounded-full w-full" />
-          <div className="h-4 bg-gray-700/50 rounded-full w-3/4 mx-auto" />
-        </div>
-
-        {/* Analysis Tabs Skeleton */}
-        <div className="bg-black/30 rounded-lg p-8 space-y-4">
-          <div className="flex space-x-4">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="h-8 bg-gray-700/50 rounded-full flex-1" />
-            ))}
+    <div className="min-h-screen flex flex-col relative overflow-x-hidden">
+      <SpaceTheme />
+      <div className="relative z-20 w-full max-w-4xl mx-auto px-4 py-8 flex-1">
+        <div className="space-y-8">
+          <Skeleton className="h-12 w-3/4 mx-auto" />
+          
+          <Skeleton className="h-48 w-full" />
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Skeleton className="h-64" />
+            <Skeleton className="h-64" />
           </div>
-          <div className="h-48 bg-gray-700/50 rounded-lg" />
-        </div>
-
-        {/* Goals Section Skeleton */}
-        <div className="bg-black/30 rounded-lg p-8 space-y-4">
-          <div className="h-8 bg-gray-700/50 rounded-full w-48" />
-          <div className="h-32 bg-gray-700/50 rounded-lg" />
+          
+          <Skeleton className="h-48" />
+          <Skeleton className="h-64" />
+          <Skeleton className="h-96" />
         </div>
       </div>
     </div>
