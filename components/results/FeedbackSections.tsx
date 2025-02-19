@@ -4,6 +4,8 @@ import { AITriggerButton } from "@/components/ai/AITriggerButton"
 import { Section } from "@/components/common/Section"
 import type { HealthCalculations } from "@/types/results"
 import type { ContextualAnalysis } from "@/types/ContextualAnalysis"
+import { feedbackMap } from "@/utils/feedbackData"
+import { Brain } from "lucide-react"
 
 interface FeedbackSectionsProps {
   answers: Record<string, any>
@@ -14,35 +16,71 @@ export function FeedbackSections({ answers, healthCalculations }: FeedbackSectio
   const getFeedbackColor = (value: any, itemType: string) => {
     if (!value) return "red"
     
+    // Convert values to scores
+    let score = 0
     switch (itemType) {
       case 'activityLevel':
-        return value === 'sedentary' ? "red" :
-               value === 'light' ? "yellow" : "green"
+        score = value === 'sedentary' ? 30 :
+                value === 'light' ? 50 :
+                value === 'moderate' ? 75 : 90
+        break
       case 'exerciseIntensity':
-        return value === 'none' ? "red" :
-               value === 'light' ? "yellow" : "green"
+        score = value === 'none' ? 30 :
+                value === 'light' ? 50 :
+                value === 'moderate' ? 75 : 90
+        break
       case 'exerciseDuration':
-        return value === 'none' || value === '0-15' ? "red" :
-               value === '15-30' ? "yellow" : "green"
+        score = value === 'none' || value === '0-15' ? 30 :
+                value === '15-30' ? 50 :
+                value === '30-45' ? 75 : 90
+        break
+      case 'dietQuality':
+        score = value === 'poor' ? 30 :
+                value === 'fair' ? 50 :
+                value === 'good' ? 75 : 90
+        break
+      case 'sleepQuality':
+        score = value === 'poor' ? 30 :
+                value === 'fair' ? 50 :
+                value === 'good' ? 75 : 90
+        break
+      case 'stressLevel':
+        score = value === 'very-high' ? 30 :
+                value === 'high' ? 50 :
+                value === 'moderate' ? 75 : 90
+        break
       default:
-        return "yellow"
+        score = 50
     }
+    
+    return score >= 80 ? "green" :
+           score >= 60 ? "amber" : "red"
   }
 
   const getFeedbackText = (value: any, itemType: string) => {
     if (!value) return "No data provided"
     
-    switch (itemType) {
-      case 'activityLevel':
-        return value === 'sedentary' ? "Consider increasing your daily activity level" :
-               value === 'light' ? "Good start, but try to be more active" : "Great activity level!"
-      case 'exerciseIntensity':
-        return value === 'none' ? "Start with light exercise to build habits" :
-               value === 'light' ? "Try to increase intensity gradually" : "Excellent exercise intensity!"
-      // Add other cases as needed
-      default:
-        return "Keep monitoring this metric"
+    const feedbackData = feedbackMap[itemType as keyof typeof feedbackMap]
+    if (feedbackData) {
+      const itemFeedback = feedbackData[value as keyof typeof feedbackData]
+      if (itemFeedback) {
+        return itemFeedback.feedback
+      }
     }
+    return "Keep monitoring this metric"
+  }
+
+  const getRecommendations = (value: any, itemType: string): string[] => {
+    if (!value) return ["Start tracking this metric"]
+    
+    const feedbackData = feedbackMap[itemType as keyof typeof feedbackMap]
+    if (feedbackData) {
+      const itemFeedback = feedbackData[value as keyof typeof feedbackData]
+      if (itemFeedback) {
+        return itemFeedback.recommendations
+      }
+    }
+    return ["Consider consulting a health professional for personalized advice"]
   }
 
   const sections = [
@@ -54,7 +92,7 @@ export function FeedbackSections({ answers, healthCalculations }: FeedbackSectio
         feedback: {
           color: getFeedbackColor(answers[item], item),
           feedback: getFeedbackText(answers[item], item),
-          recommendations: ["Start with small changes", "Set realistic goals"]
+          recommendations: getRecommendations(answers[item], item)
         }
       })),
       contextualAnalyses: [{
@@ -63,19 +101,21 @@ export function FeedbackSections({ answers, healthCalculations }: FeedbackSectio
         feedback: `Your exercise score is ${healthCalculations.exerciseScore}%`,
         recommendations: [
           "Aim for 150 minutes of moderate exercise per week",
-          "Include both cardio and strength training"
+          "Include both cardio and strength training",
+          "Ensure proper form and technique",
+          "Allow adequate recovery between sessions"
         ]
       }]
     },
     {
       title: "Diet & Nutrition",
-      items: ["mealFrequency", "dietQuality", "waterIntake"].map(item => ({
+      items: ["dietQuality", "mealFrequency", "waterIntake"].map(item => ({
         label: item.replace(/([A-Z])/g, ' $1').trim(),
         value: answers[item] || 'N/A',
         feedback: {
           color: getFeedbackColor(answers[item], item),
           feedback: getFeedbackText(answers[item], item),
-          recommendations: ["Focus on balanced meals", "Stay hydrated throughout the day"]
+          recommendations: getRecommendations(answers[item], item)
         }
       })),
       contextualAnalyses: [{
@@ -83,8 +123,10 @@ export function FeedbackSections({ answers, healthCalculations }: FeedbackSectio
         title: "Nutrition Analysis",
         feedback: `Your nutrition score is ${healthCalculations.nutritionScore}%`,
         recommendations: [
-          "Include more whole foods in your diet",
-          "Balance your macronutrients"
+          "Focus on whole, unprocessed foods",
+          "Ensure adequate protein intake",
+          "Stay hydrated throughout the day",
+          "Time meals appropriately around exercise"
         ]
       }]
     },
@@ -96,7 +138,7 @@ export function FeedbackSections({ answers, healthCalculations }: FeedbackSectio
         feedback: {
           color: getFeedbackColor(answers[item], item),
           feedback: getFeedbackText(answers[item], item),
-          recommendations: ["Establish a bedtime routine", "Practice stress management"]
+          recommendations: getRecommendations(answers[item], item)
         }
       })),
       contextualAnalyses: [{
@@ -104,20 +146,27 @@ export function FeedbackSections({ answers, healthCalculations }: FeedbackSectio
         title: "Recovery Analysis",
         feedback: `Your recovery score is ${healthCalculations.sleepScore}%`,
         recommendations: [
-          "Aim for 7-9 hours of sleep",
-          "Create a relaxing sleep environment"
+          "Aim for 7-9 hours of quality sleep",
+          "Maintain consistent sleep schedule",
+          "Create optimal sleep environment",
+          "Practice stress management"
         ]
       }]
     },
     {
-      title: "Mental Health",
-      items: ["mentalWellbeing", "socialConnections", "workLifeBalance"].map(item => ({
+      id: 'mental-health',
+      title: 'Mental Health',
+      description: 'Your mental health is crucial for overall wellbeing.',
+      severity: healthCalculations.mentalHealthScore < 60 ? 'warning' : 'info',
+      icon: <Brain className="h-5 w-5" />,
+      feedback: `Your mental health score is ${healthCalculations.mentalHealthScore}%`,
+      items: ["mentalHealth", "socialFrequency", "stressLevel"].map(item => ({
         label: item.replace(/([A-Z])/g, ' $1').trim(),
         value: answers[item] || 'N/A',
         feedback: {
           color: getFeedbackColor(answers[item], item),
           feedback: getFeedbackText(answers[item], item),
-          recommendations: ["Practice mindfulness", "Maintain social connections"]
+          recommendations: getRecommendations(answers[item], item)
         }
       })),
       contextualAnalyses: [{
@@ -125,8 +174,10 @@ export function FeedbackSections({ answers, healthCalculations }: FeedbackSectio
         title: "Mental Health Analysis",
         feedback: `Your mental health score is ${healthCalculations.mentalHealthScore}%`,
         recommendations: [
-          "Take regular breaks during the day",
-          "Engage in activities you enjoy"
+          "Practice regular stress management",
+          "Maintain social connections",
+          "Seek support when needed",
+          "Focus on overall wellbeing"
         ]
       }]
     }

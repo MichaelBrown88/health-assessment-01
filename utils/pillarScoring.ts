@@ -117,9 +117,25 @@ function getBodyCompositionRecommendations(score: number, metrics: BodyCompositi
 function calculateExerciseScore(answers: AnswerType): PillarScore {
   let score = 0;
   const scoreMap = {
-    activityLevel: { sedentary: 2, light: 5, moderate: 8, active: 10, veryActive: 12 },
-    exerciseIntensity: { light: 1, moderate: 2, vigorous: 4, "very-intense": 3 },
-    exerciseDuration: { "less-than-30": 1, "30-45": 2, "45-60": 3, "60+": 4 }
+    activityLevel: { 
+      sedentary: 2, 
+      light: 5, 
+      moderate: 8, 
+      active: 10, 
+      veryActive: 12 
+    },
+    exerciseIntensity: { 
+      light: 2, 
+      moderate: 4, 
+      vigorous: 6, 
+      "very-intense": 5 
+    },
+    exerciseDuration: { 
+      "less-than-30": 2, 
+      "30-45": 4, 
+      "45-60": 6, 
+      "60+": 5 
+    }
   };
 
   // Activity Level (max 12 points)
@@ -127,20 +143,26 @@ function calculateExerciseScore(answers: AnswerType): PillarScore {
     score += scoreMap.activityLevel[answers.activityLevel] || 0;
   }
 
-  // Exercise Intensity (max 4 points)
+  // Exercise Intensity (max 6 points)
   if (answers.exerciseIntensity && typeof answers.exerciseIntensity === 'string') {
     score += scoreMap.exerciseIntensity[answers.exerciseIntensity] || 0;
   }
 
-  // Exercise Duration (max 4 points)
+  // Exercise Duration (max 6 points)
   if (answers.exerciseDuration && typeof answers.exerciseDuration === 'string') {
     score += scoreMap.exerciseDuration[answers.exerciseDuration] || 0;
   }
 
+  // Exercise Type (max 6 points)
+  if (Array.isArray(answers.exerciseType)) {
+    const types = answers.exerciseType as string[];
+    score += Math.min(6, types.length * 2); // 2 points per type, max 6 points
+  }
+
   return {
-    score,
+    score: Math.min(30, score), // Cap at 30 points
     label: "Exercise",
-    description: "Based on activity level, exercise intensity, and duration",
+    description: "Based on activity level, exercise intensity, duration, and type",
     color: getScoreColor(score),
     recommendations: getExerciseRecommendations(score, answers)
   };
@@ -149,30 +171,52 @@ function calculateExerciseScore(answers: AnswerType): PillarScore {
 function calculateNutritionScore(answers: AnswerType): PillarScore {
   let score = 0;
   const scoreMap = {
-    diet: { unhealthy: 0, average: 6, healthy: 10, "very-healthy": 12 },
-    mealFrequency: { "1-2": 1, "3-4": 4, "5-6": 3, "more-than-6": 2 },
-    lastMeal: { "less-than-2": 2, "2-4": 4, "4-6": 2, "more-than-6": 1, "after-10pm": 0 }
+    diet: { 
+      unhealthy: 0, 
+      average: 8, 
+      healthy: 12, 
+      "very-healthy": 15 
+    },
+    mealFrequency: { 
+      "1-2": 2, 
+      "3-4": 5, 
+      "5+": 4 
+    },
+    lastMeal: { 
+      "before-6pm": 5, 
+      "6pm-8pm": 5, 
+      "8pm-10pm": 3, 
+      "after-10pm": 1 
+    }
   };
 
-  // Diet Quality (max 12 points)
+  // Diet Quality (max 15 points)
   if (answers.diet && typeof answers.diet === 'string') {
     score += scoreMap.diet[answers.diet] || 0;
   }
 
-  // Meal Frequency (max 4 points)
+  // Meal Frequency (max 5 points)
   if (answers.mealFrequency && typeof answers.mealFrequency === 'string') {
     score += scoreMap.mealFrequency[answers.mealFrequency] || 0;
   }
 
-  // Last Meal Timing (max 4 points)
+  // Last Meal Timing (max 5 points)
   if (answers.lastMeal && typeof answers.lastMeal === 'string') {
     score += scoreMap.lastMeal[answers.lastMeal] || 0;
   }
 
+  // Goals alignment (max 5 points)
+  if (Array.isArray(answers.goals)) {
+    const hasNutritionGoals = answers.goals.some(goal => 
+      ['weight-loss', 'muscle-gain', 'overall-health'].includes(goal)
+    );
+    if (hasNutritionGoals) score += 5;
+  }
+
   return {
-    score,
+    score: Math.min(30, score), // Cap at 30 points
     label: "Nutrition",
-    description: "Based on diet quality, meal timing, and frequency",
+    description: "Based on diet quality, meal timing, and eating patterns",
     color: getScoreColor(score),
     recommendations: getNutritionRecommendations(score, answers)
   };
@@ -187,29 +231,39 @@ function calculateRecoveryScore(answers: AnswerType): PillarScore {
       "7-9": 10,
       "more-than-9": 7
     },
-    sleepQuality: { poor: 0, fair: 3, good: 6, excellent: 8 },
-    recovery: { poor: 0, fair: 2, good: 3, excellent: 4 }
+    sleepQuality: { 
+      poor: 0, 
+      fair: 4, 
+      good: 7, 
+      excellent: 10 
+    },
+    recovery: { 
+      poor: 0, 
+      fair: 3, 
+      good: 7, 
+      excellent: 10 
+    }
   };
 
-  // Sleep Duration (max 8 points)
+  // Sleep Duration (max 10 points)
   if (answers.sleepDuration && typeof answers.sleepDuration === 'string') {
     score += scoreMap.sleepDuration[answers.sleepDuration] || 0;
   }
 
-  // Sleep Quality (max 8 points)
+  // Sleep Quality (max 10 points)
   if (answers.sleepQuality && typeof answers.sleepQuality === 'string') {
     score += scoreMap.sleepQuality[answers.sleepQuality] || 0;
   }
 
-  // Recovery (max 4 points)
+  // Recovery (max 10 points)
   if (answers.recovery && typeof answers.recovery === 'string') {
     score += scoreMap.recovery[answers.recovery] || 0;
   }
 
   return {
-    score,
+    score: Math.min(30, score), // Cap at 30 points
     label: "Recovery",
-    description: "Based on sleep quality, duration, and recovery",
+    description: "Based on sleep quality, duration, and physical recovery",
     color: getScoreColor(score),
     recommendations: getRecoveryRecommendations(score, answers)
   };
@@ -218,36 +272,45 @@ function calculateRecoveryScore(answers: AnswerType): PillarScore {
 function calculateMentalHealthScore(answers: AnswerType): PillarScore {
   let score = 0;
   const scoreMap = {
-    stress: { "very-high": 0, high: 2, moderate: 4, low: 6 },
-    mentalHealth: { often: 0, sometimes: 2, rarely: 4, never: 6 },
-    socializing: { rarely: 0, occasionally: 2, regularly: 4, frequently: 6 },
-    workLifeBalance: { poor: 0, fair: 1, good: 1.5, excellent: 2 }
+    stress: { 
+      "very-high": 0, 
+      high: 3, 
+      moderate: 6, 
+      low: 10 
+    },
+    mentalHealth: { 
+      often: 0, 
+      sometimes: 3, 
+      rarely: 6, 
+      never: 10 
+    },
+    socializing: { 
+      rarely: 0, 
+      occasionally: 3, 
+      regularly: 7, 
+      frequently: 10 
+    }
   };
 
-  // Stress Levels (max 6 points)
+  // Stress Levels (max 10 points)
   if (answers.stress && typeof answers.stress === 'string') {
     score += scoreMap.stress[answers.stress] || 0;
   }
 
-  // Mental Health (max 6 points)
+  // Mental Health (max 10 points)
   if (answers.mentalHealth && typeof answers.mentalHealth === 'string') {
     score += scoreMap.mentalHealth[answers.mentalHealth] || 0;
   }
 
-  // Social Activity (max 6 points)
+  // Social Activity (max 10 points)
   if (answers.socializing && typeof answers.socializing === 'string') {
     score += scoreMap.socializing[answers.socializing] || 0;
   }
 
-  // Work-Life Balance (max 2 points)
-  if (answers.workLifeBalance && typeof answers.workLifeBalance === 'string') {
-    score += scoreMap.workLifeBalance[answers.workLifeBalance] || 0;
-  }
-
   return {
-    score,
+    score: Math.min(30, score), // Cap at 30 points
     label: "Mental Health",
-    description: "Based on stress, mental wellbeing, and social factors",
+    description: "Based on stress levels, emotional well-being, and social connection",
     color: getScoreColor(score),
     recommendations: getMentalHealthRecommendations(score, answers)
   };
@@ -257,86 +320,158 @@ function calculateMentalHealthScore(answers: AnswerType): PillarScore {
 function getExerciseRecommendations(score: number, answers: AnswerType): string[] {
   const recommendations: string[] = [];
   
-  if (score < 10) {
-    recommendations.push("Start with light physical activity like walking");
-    recommendations.push("Aim for 10-15 minutes of exercise, 3 times per week");
-  } else if (score < 15) {
-    recommendations.push("Gradually increase your activity level");
-    recommendations.push("Mix cardio and strength training exercises");
-  } else if (score < 18) {
-    recommendations.push("Consider adding variety to your workouts");
-    recommendations.push("Focus on progressive overload in your training");
-  } else {
-    recommendations.push("Maintain your excellent exercise routine");
-    recommendations.push("Consider new challenges to prevent plateaus");
+  // Activity Level Recommendations
+  if (answers.activityLevel === 'sedentary') {
+    recommendations.push("Start with daily walks and light physical activity");
+    recommendations.push("Aim to break up long periods of sitting with movement breaks");
+  } else if (answers.activityLevel === 'light') {
+    recommendations.push("Gradually increase your activity to 3-4 days per week");
+    recommendations.push("Consider adding structured exercise to your routine");
   }
-  
-  return recommendations;
+
+  // Exercise Intensity Recommendations
+  if (answers.exerciseIntensity === 'light') {
+    recommendations.push("Gradually incorporate more moderate-intensity exercises");
+    recommendations.push("Try interval training to safely increase intensity");
+  } else if (answers.exerciseIntensity === 'very-intense') {
+    recommendations.push("Ensure adequate recovery between intense workouts");
+    recommendations.push("Mix high-intensity days with lighter recovery sessions");
+  }
+
+  // Exercise Duration Recommendations
+  if (answers.exerciseDuration === 'less-than-30') {
+    recommendations.push("Aim to gradually increase workout duration to 30-45 minutes");
+    recommendations.push("Break up exercise into multiple shorter sessions if needed");
+  }
+
+  // Exercise Type Recommendations
+  if (Array.isArray(answers.exerciseType)) {
+    const types = answers.exerciseType as string[];
+    if (!types.includes('strength')) {
+      recommendations.push("Consider adding strength training to your routine");
+    }
+    if (!types.includes('cardio')) {
+      recommendations.push("Include some cardiovascular exercise for heart health");
+    }
+    if (!types.includes('flexibility')) {
+      recommendations.push("Add flexibility work to improve mobility and prevent injury");
+    }
+  }
+
+  return recommendations.slice(0, 3); // Return top 3 recommendations
 }
 
 function getNutritionRecommendations(score: number, answers: AnswerType): string[] {
   const recommendations: string[] = [];
-  
-  if (score < 10) {
-    recommendations.push("Focus on eating more whole, unprocessed foods");
-    recommendations.push("Establish regular meal times");
-  } else if (score < 15) {
-    recommendations.push("Increase protein and fiber intake");
-    recommendations.push("Consider tracking your meals for better awareness");
-  } else if (score < 18) {
-    recommendations.push("Fine-tune your meal timing and portions");
-    recommendations.push("Experiment with healthy meal prep strategies");
-  } else {
-    recommendations.push("Maintain your excellent nutrition habits");
-    recommendations.push("Consider seasonal adjustments to your diet");
+
+  // Diet Quality Recommendations
+  if (answers.diet === 'unhealthy') {
+    recommendations.push("Focus on incorporating more whole, unprocessed foods");
+    recommendations.push("Increase fruit and vegetable intake");
+  } else if (answers.diet === 'average') {
+    recommendations.push("Gradually replace processed foods with whole food alternatives");
+    recommendations.push("Plan meals ahead to ensure balanced nutrition");
   }
-  
-  return recommendations;
+
+  // Meal Frequency Recommendations
+  if (answers.mealFrequency === '1-2') {
+    recommendations.push("Consider eating smaller, more frequent meals throughout the day");
+    recommendations.push("Ensure adequate calorie intake across your meals");
+  } else if (answers.mealFrequency === '5+') {
+    recommendations.push("Monitor portion sizes to maintain healthy total calorie intake");
+  }
+
+  // Meal Timing Recommendations
+  if (answers.lastMeal === 'after-10pm') {
+    recommendations.push("Try to eat your last meal at least 2-3 hours before bedtime");
+    recommendations.push("Plan earlier dinner times to improve sleep quality");
+  }
+
+  // Goals-based Recommendations
+  if (Array.isArray(answers.goals)) {
+    if (answers.goals.includes('weight-loss')) {
+      recommendations.push("Focus on portion control and nutrient-dense foods");
+    }
+    if (answers.goals.includes('muscle-gain')) {
+      recommendations.push("Ensure adequate protein intake with each meal");
+    }
+  }
+
+  return recommendations.slice(0, 3); // Return top 3 recommendations
 }
 
 function getRecoveryRecommendations(score: number, answers: AnswerType): string[] {
   const recommendations: string[] = [];
-  
-  if (score < 10) {
-    recommendations.push("Prioritize getting at least 7 hours of sleep");
-    recommendations.push("Create a consistent bedtime routine");
-  } else if (score < 15) {
-    recommendations.push("Focus on sleep quality improvements");
-    recommendations.push("Consider relaxation techniques before bed");
-  } else if (score < 18) {
-    recommendations.push("Optimize your sleep environment");
-    recommendations.push("Balance activity with adequate rest periods");
-  } else {
-    recommendations.push("Maintain your excellent recovery routine");
-    recommendations.push("Monitor sleep quality during stressful periods");
+
+  // Sleep Duration Recommendations
+  if (answers.sleepDuration === 'less-than-5') {
+    recommendations.push("Prioritize getting more sleep - aim for at least 7 hours");
+    recommendations.push("Establish a consistent bedtime routine");
+  } else if (answers.sleepDuration === '5-7') {
+    recommendations.push("Try to add an extra 30-60 minutes to your sleep duration");
+    recommendations.push("Maintain consistent sleep and wake times");
+  } else if (answers.sleepDuration === 'more-than-9') {
+    recommendations.push("Assess your sleep quality and energy levels");
+    recommendations.push("Consider adjusting your sleep schedule if feeling groggy");
   }
-  
-  return recommendations;
+
+  // Sleep Quality Recommendations
+  if (answers.sleepQuality === 'poor') {
+    recommendations.push("Create a dark, quiet, and cool sleep environment");
+    recommendations.push("Avoid screens and stimulating activities before bed");
+  } else if (answers.sleepQuality === 'fair') {
+    recommendations.push("Establish a relaxing pre-sleep routine");
+    recommendations.push("Consider factors that might be disrupting your sleep");
+  }
+
+  // Recovery Recommendations
+  if (answers.recovery === 'poor') {
+    recommendations.push("Include dedicated rest days in your exercise routine");
+    recommendations.push("Focus on proper post-exercise nutrition and hydration");
+  } else if (answers.recovery === 'fair') {
+    recommendations.push("Implement active recovery techniques like light stretching");
+    recommendations.push("Monitor your exercise intensity and rest intervals");
+  }
+
+  return recommendations.slice(0, 3); // Return top 3 recommendations
 }
 
 function getMentalHealthRecommendations(score: number, answers: AnswerType): string[] {
   const recommendations: string[] = [];
-  
-  if (score < 10) {
-    recommendations.push("Consider speaking with a mental health professional");
-    recommendations.push("Practice basic stress management techniques");
-  } else if (score < 15) {
-    recommendations.push("Incorporate regular mindfulness practices");
-    recommendations.push("Build stronger social connections");
-  } else if (score < 18) {
-    recommendations.push("Maintain work-life balance");
-    recommendations.push("Continue developing stress resilience");
-  } else {
-    recommendations.push("Share your positive mental health practices");
-    recommendations.push("Stay mindful of early stress indicators");
+
+  // Stress Level Recommendations
+  if (answers.stress === 'very-high' || answers.stress === 'high') {
+    recommendations.push("Consider stress-reduction techniques like meditation or deep breathing");
+    recommendations.push("Identify and address major sources of stress in your life");
+  } else if (answers.stress === 'moderate') {
+    recommendations.push("Practice regular stress management techniques");
+    recommendations.push("Build in regular breaks and relaxation time");
   }
-  
-  return recommendations;
+
+  // Mental Health Recommendations
+  if (answers.mentalHealth === 'often') {
+    recommendations.push("Consider speaking with a mental health professional");
+    recommendations.push("Develop coping strategies for anxiety and low mood");
+  } else if (answers.mentalHealth === 'sometimes') {
+    recommendations.push("Practice self-care and emotional awareness");
+    recommendations.push("Establish a support system for challenging times");
+  }
+
+  // Social Activity Recommendations
+  if (answers.socializing === 'rarely') {
+    recommendations.push("Try to increase social connections, even if virtually");
+    recommendations.push("Join groups or activities aligned with your interests");
+  } else if (answers.socializing === 'occasionally') {
+    recommendations.push("Schedule regular social activities with friends or family");
+    recommendations.push("Look for opportunities to expand your social network");
+  }
+
+  return recommendations.slice(0, 3); // Return top 3 recommendations
 }
 
 // Export the main functions directly where they're defined
 export function calculateHealthScore(answers: AnswerType, healthCalculations: HealthCalculations): HealthPillarScores {
-  return {
+  const scores = {
     bodyComposition: calculateBodyCompositionScore({
       bmi: healthCalculations.bmi || 0,
       bodyFat: healthCalculations.bodyFat,
@@ -350,6 +485,13 @@ export function calculateHealthScore(answers: AnswerType, healthCalculations: He
     recovery: calculateRecoveryScore(answers),
     mentalHealth: calculateMentalHealthScore(answers)
   };
+
+  // Ensure each pillar score is capped at 30
+  Object.keys(scores).forEach(key => {
+    scores[key as keyof HealthPillarScores].score = Math.min(30, scores[key as keyof HealthPillarScores].score);
+  });
+
+  return scores;
 }
 
 export function getOverallScore(pillarScores: HealthPillarScores): number {
@@ -357,5 +499,6 @@ export function getOverallScore(pillarScores: HealthPillarScores): number {
     (sum, pillar) => sum + pillar.score,
     0
   );
-  return Math.round(totalScore);
+  // Cap the overall score at 100
+  return Math.min(100, Math.round(totalScore / 1.5)); // Divide by 1.5 since we have 5 pillars at 30 points each
 } 

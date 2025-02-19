@@ -12,7 +12,7 @@ interface HealthPillarsProps {
 }
 
 export function HealthPillars({ pillarScores }: HealthPillarsProps) {
-  const getPercentage = (score: number) => Math.round((score / 20) * 100);
+  const getPercentage = (score: number) => Math.round((score / 30) * 100);
   
   const getTooltipContent = (key: string, score: number) => {
     switch(key) {

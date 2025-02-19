@@ -16,6 +16,8 @@ import { SpaceTheme } from '@/components/layout/SpaceTheme'
 import type { DecodedResults } from '@/types/results'
 import { WelcomeMessage } from '@/components/results/WelcomeMessage'
 import { SummarySection } from '@/components/results/SummarySection'
+import { doc, getDoc } from 'firebase/firestore'
+import { db } from '@/lib/firebase'
 
 export default function ResultsPage() {
   const { user } = useAuth()
@@ -39,6 +41,27 @@ export default function ResultsPage() {
           setContactInfo({ name: userData });
         }
 
+        // First check for assessment ID in URL
+        const assessmentId = searchParams?.get('id')
+        if (assessmentId) {
+          const docRef = doc(db, 'assessments', assessmentId)
+          const docSnap = await getDoc(docRef)
+          if (docSnap.exists()) {
+            const assessmentData = docSnap.data()
+            const healthCalcs = calculateHealthMetrics(assessmentData.answers)
+            setResults({
+              answers: assessmentData.answers,
+              assessmentResults: {
+                ...assessmentData.assessmentResults,
+                healthCalculations: healthCalcs
+              }
+            })
+            setLoading(false)
+            return
+          }
+        }
+
+        // Then check for results parameter
         const resultsParam = searchParams?.get('results')
         if (resultsParam) {
           const decodedResults = JSON.parse(decodeURIComponent(resultsParam))
@@ -55,6 +78,7 @@ export default function ResultsPage() {
           return
         }
 
+        // Finally check session storage
         const storedResults = sessionStorage.getItem('temporaryResults')
         if (storedResults) {
           const parsedResults = JSON.parse(storedResults)

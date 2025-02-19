@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { getUserAssessments } from '@/lib/db'
-import type { Assessment, ChartData } from '@/types/assessment'
+import type { Assessment } from '@/types/assessment'
 import { ProgressChart } from '@/components/dashboard/ProgressChart'
 import { StatCards } from '@/components/dashboard/StatCards'
 import { RecentAchievements } from '@/components/dashboard/RecentAchievements'
@@ -21,6 +21,9 @@ import { calculateStreak, calculateCompletionRate, compareMetrics } from '@/lib/
 import { Card } from "@/components/ui/card"
 import { PillarOverview } from '@/components/dashboard/PillarOverview'
 import { AssessmentHistory } from '@/components/dashboard/AssessmentHistory'
+import { useAssessmentData } from '@/hooks/useAssessmentData'
+import { useAsync } from '@/hooks/useAsync'
+import { HistoricalResults } from '@/components/dashboard/HistoricalResults'
 
 // Helper function to convert timestamp to number
 const getTimestampNumber = (timestamp: number | Date | { seconds: number; nanoseconds: number }): number => {
@@ -34,68 +37,32 @@ const getTimestampNumber = (timestamp: number | Date | { seconds: number; nanose
 };
 
 export default function DashboardPage() {
-  const [assessments, setAssessments] = useState<Assessment[]>([]);
-  const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
-
-  // Add these calculations
-  const firstAssessmentDate = assessments.length > 0 
-    ? new Date(getTimestampNumber(assessments[0].timestamp)).toLocaleDateString()
-    : 'No assessments yet';
-
-  const nextAssessmentDate = assessments.length > 0 
-    ? new Date(getTimestampNumber(assessments[assessments.length - 1].timestamp) + (7 * 24 * 60 * 60 * 1000)).toLocaleDateString()
-    : 'N/A';
-
-  // Add this to calculate latest assessment
-  const latestAssessment = assessments.length > 0 
-    ? assessments.reduce((latest, current) => {
-        const currentDate = getTimestampNumber(current.timestamp);
-        const latestDate = getTimestampNumber(latest.timestamp);
-        return currentDate > latestDate ? current : latest;
-      }, assessments[0])
-    : null;
+  const { data: assessments = [], error, loading, execute } = useAsync<Assessment[]>();
+  const { 
+    firstAssessmentDate, 
+    nextAssessmentDate, 
+    latestAssessment, 
+    chartData 
+  } = useAssessmentData(assessments || []);
 
   useEffect(() => {
-    async function fetchAssessments() {
-      if (!user) return;
-      
-      try {
-        const userAssessments = await getUserAssessments(user.uid);
-        
-        // Transform the assessments to include the required score property
-        const transformedAssessments = userAssessments.map(assessment => ({
-          ...assessment,
-          metrics: {
-            ...assessment.metrics,
-            score: assessment.metrics.overallScore // Set score equal to overallScore
-          }
-        }));
-
-        setAssessments(transformedAssessments);
-        
-      } catch (error) {
-        console.error('Error fetching assessments:', error);
-        setError('Failed to load assessments');
-      }
+    if (user) {
+      execute(() => getUserAssessments(user.uid));
     }
+  }, [user, execute]);
 
-    fetchAssessments();
-  }, [user]);
-
-  // When passing data to ProgressChart, transform it to match ChartData
-  const chartData: ChartData[] = assessments.map(assessment => ({
-    ...assessment,
-    date: new Date(getTimestampNumber(assessment.timestamp)),
-    timestamp: getTimestampNumber(assessment.timestamp),
-    answers: Object.fromEntries(
-      Object.entries(assessment.answers).map(([key, value]) => [key, String(value)])
-    )
-  }));
+  if (loading) {
+    return <div className="flex items-center justify-center min-h-screen">
+      <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-white" />
+    </div>;
+  }
 
   if (error) {
-    return <div className="text-red-500 mt-4">{error}</div>;
+    return <div className="text-red-500 mt-4">{error.message}</div>;
   }
+
+  const hasAssessments = assessments && assessments.length > 0;
 
   return (
     <div className="min-h-screen relative">
@@ -103,7 +70,12 @@ export default function DashboardPage() {
       <div className="relative z-10 w-full px-6 py-12 mx-auto">
         <div className="max-w-7xl mx-auto">
           <div className="space-y-8">
-            <h1 className="text-3xl font-bold text-white mb-8 px-4">Your Health Dashboard</h1>
+            <div className="flex justify-between items-center mb-8 px-4">
+              <h1 className="text-3xl font-bold text-white">Your Health Dashboard</h1>
+              {hasAssessments && (
+                <HistoricalResults assessments={assessments} />
+              )}
+            </div>
             
             {/* Assessment Dates */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 px-4">
@@ -112,7 +84,7 @@ export default function DashboardPage() {
                   <h3 className="text-sm font-medium text-gray-400">First Assessment</h3>
                   <CalendarIcon className="w-4 h-4 text-blue-400" />
                 </div>
-                <p className="text-lg font-semibold text-white">{firstAssessmentDate}</p>
+                <p className="text-lg font-semibold text-white">{firstAssessmentDate || 'No assessments yet'}</p>
               </Card>
               
               <Card className="bg-black/30 backdrop-blur-sm border-gray-800 p-6">
@@ -120,7 +92,7 @@ export default function DashboardPage() {
                   <h3 className="text-sm font-medium text-gray-400">Next Assessment</h3>
                   <ClockIcon className="w-4 h-4 text-purple-400" />
                 </div>
-                <p className="text-lg font-semibold text-white">{nextAssessmentDate}</p>
+                <p className="text-lg font-semibold text-white">{nextAssessmentDate || 'Complete your first assessment'}</p>
               </Card>
             </div>
             
@@ -151,53 +123,57 @@ export default function DashboardPage() {
             )}
             
             {/* StatCards Section */}
-            <div className="px-4">
-              <StatCards assessments={assessments} />
-            </div>
+            {hasAssessments && (
+              <div className="px-4">
+                <StatCards assessments={assessments} />
+              </div>
+            )}
             
             {/* Engagement Metrics Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 px-4">
-              <Card className="bg-black/30 backdrop-blur-sm border-gray-800 p-6">
-                <div className="text-center">
-                  <Trophy className="h-8 w-8 mb-2 mx-auto text-yellow-400" />
-                  <p className="text-2xl font-bold text-white">{calculateStreak(assessments)}</p>
-                  <p className="text-sm text-gray-400">Day Streak</p>
-                </div>
-              </Card>
-              
-              <Card className="bg-black/30 backdrop-blur-sm border-gray-800 p-6">
-                <div className="text-center">
-                  <Award className="h-8 w-8 mb-2 mx-auto text-purple-400" />
-                  <p className="text-2xl font-bold text-white">{calculateCompletionRate(assessments)}%</p>
-                  <p className="text-sm text-gray-400">Completion Rate</p>
-                </div>
-              </Card>
-            </div>
+            {hasAssessments && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 px-4">
+                <Card className="bg-black/30 backdrop-blur-sm border-gray-800 p-6">
+                  <div className="text-center">
+                    <Trophy className="h-8 w-8 mb-2 mx-auto text-yellow-400" />
+                    <p className="text-2xl font-bold text-white">{calculateStreak(assessments)}</p>
+                    <p className="text-sm text-gray-400">Day Streak</p>
+                  </div>
+                </Card>
+                
+                <Card className="bg-black/30 backdrop-blur-sm border-gray-800 p-6">
+                  <div className="text-center">
+                    <Award className="h-8 w-8 mb-2 mx-auto text-purple-400" />
+                    <p className="text-2xl font-bold text-white">{calculateCompletionRate(assessments)}%</p>
+                    <p className="text-sm text-gray-400">Completion Rate</p>
+                  </div>
+                </Card>
+              </div>
+            )}
             
             {/* Progress Chart */}
-            {assessments.length > 1 && (
+            {assessments && assessments.length > 1 && (
               <div className="px-4">
                 <Card className="bg-black/30 backdrop-blur-sm border-gray-800 p-6">
                   <h2 className="text-xl font-semibold text-white mb-6">Your Progress</h2>
                   <div className="h-[400px]">
-                    <ProgressChart 
-                      assessments={chartData} 
-                    />
+                    <ProgressChart assessments={chartData} />
                   </div>
                 </Card>
               </div>
             )}
             
             {/* Recent Achievements */}
-            <div className="px-4">
-              <RecentAchievements assessments={assessments} />
-            </div>
+            {hasAssessments && (
+              <div className="px-4">
+                <RecentAchievements assessments={assessments} />
+              </div>
+            )}
             
             {/* Metric Changes */}
-            <div className="px-4">
-              <Card className="bg-black/30 backdrop-blur-sm border-gray-800 p-6">
-                <h2 className="text-xl font-semibold text-white mb-4">Metric Changes</h2>
-                {assessments.length >= 2 && (
+            {assessments && assessments.length >= 2 && (
+              <div className="px-4">
+                <Card className="bg-black/30 backdrop-blur-sm border-gray-800 p-6">
+                  <h2 className="text-xl font-semibold text-white mb-4">Metric Changes</h2>
                   <div className="grid grid-cols-3 gap-4">
                     <div className="text-center p-4 bg-black/20 rounded-lg">
                       <ArrowUpIcon className="h-6 w-6 text-green-500 mx-auto mb-2" />
@@ -230,11 +206,11 @@ export default function DashboardPage() {
                       <p className="text-sm text-gray-400">Declined</p>
                     </div>
                   </div>
-                )}
-              </Card>
-            </div>
+                </Card>
+              </div>
+            )}
             
-            {assessments.length > 0 && (
+            {hasAssessments && (
               <div className="px-4">
                 <AssessmentHistory assessments={assessments} />
               </div>

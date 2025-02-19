@@ -12,8 +12,6 @@ import { ContactForm } from '@/components/common/ContactForm'
 import { questions } from '@/data/questions'
 import type { AnswerType } from '@/data/questions'
 import { cn } from '@/lib/utils'
-import { doc, collection, setDoc, serverTimestamp } from 'firebase/firestore'
-import { db } from '@/lib/firebase'
 import { calculateHealthMetrics as calculateMetrics } from '@/utils/healthUtils'
 
 // Add answer reducer
@@ -39,34 +37,50 @@ export default function HealthAssessmentPage() {
   const router = useRouter()
   const { user } = useAuth()
 
-  // Move these functions before the useCallback hooks
-  const calculateOverallScore = (_answers: AnswerType): number => {
-    // Replace placeholder with actual calculation
+  // Wrap functions in useCallback
+  const calculateOverallScore = useCallback((_answers: AnswerType): number => {
     const healthMetrics = calculateMetrics(_answers)
     return Math.round(
       (healthMetrics.exerciseScore * 0.3) +
       (healthMetrics.nutritionScore * 0.3) +
-      (healthMetrics.wellbeingScore * 0.2) +
+      (healthMetrics.mentalHealthScore * 0.2) +
       (healthMetrics.sleepScore * 0.2)
     )
-  }
+  }, [])
 
-  const calculateHealthMetrics = (answers: AnswerType) => {
-    return calculateMetrics(answers)
-  }
+  const calculateHealthMetrics = useCallback((answers: AnswerType) => {
+    const metrics = calculateMetrics(answers);
+    const healthCalculations: Record<string, string | number | null> = {
+      exerciseScore: metrics.exerciseScore ?? 0,
+      nutritionScore: metrics.nutritionScore ?? 0,
+      mentalHealthScore: metrics.mentalHealthScore ?? 0,
+      sleepScore: metrics.sleepScore ?? 0,
+      bmi: metrics.bmi,
+      bmiCategory: metrics.bmiCategory,
+      bmr: metrics.bmr,
+      tdee: metrics.tdee,
+      bodyFat: metrics.bodyFat,
+      idealWeightLow: metrics.idealWeightLow,
+      idealWeightHigh: metrics.idealWeightHigh,
+      recommendedCalories: metrics.recommendedCalories,
+      proteinGrams: metrics.proteinGrams,
+      carbGrams: metrics.carbGrams,
+      fatGrams: metrics.fatGrams
+    };
+    return healthCalculations;
+  }, [])
 
-  const getSectionSummary = (section: string, _answers: AnswerType): string => {
-    // Implement your summary logic here
+  const getSectionSummary = useCallback((section: string, _answers: AnswerType): string => {
     return `Summary for ${section}`;
-  };
+  }, [])
 
-  const generateSummary = (answers: AnswerType) => {
+  const generateSummary = useCallback((answers: AnswerType) => {
     return {
       exercise: getSectionSummary('exercise', answers),
       nutrition: getSectionSummary('nutrition', answers),
-      wellbeing: getSectionSummary('wellbeing', answers),
+      mentalHealth: getSectionSummary('mentalHealth', answers),
     };
-  };
+  }, [getSectionSummary])
 
   // Now define the useCallback hooks
   const handleAnswer = useCallback((value: string | number | string[]) => {
@@ -103,7 +117,7 @@ export default function HealthAssessmentPage() {
         setShowContactForm(true)
       }
     }
-  }, [currentQuestion, answers, user, router])
+  }, [currentQuestion, answers, user, router, calculateOverallScore, calculateHealthMetrics, generateSummary])
 
   const handlePrevious = useCallback(() => {
     let prevQuestion = currentQuestion - 1;
@@ -124,11 +138,14 @@ export default function HealthAssessmentPage() {
         
         // Delay the actual reset
         setTimeout(() => {
+          // Ensure defaultValue is a number
+          const defaultValue = Number(questions[prevQuestion].defaultValue) || 0;
+          
           dispatch({ 
             type: 'SET_ANSWER', 
             payload: { 
               id: 'bodyFat', 
-              value: questions[prevQuestion].defaultValue 
+              value: defaultValue
             } 
           });
           // Hide message after reset
@@ -141,46 +158,83 @@ export default function HealthAssessmentPage() {
   }, [currentQuestion, answers]);
 
   const handleContactInfoSubmit = useCallback(async (name: string, email: string) => {
-    if (isSubmitting) return;
+    console.log('Starting contact info submission...', { name, email });
     setIsSubmitting(true);
-    
+    setSubmitError(null);
+
     try {
-      // Store contact info in session storage
-      sessionStorage.setItem('contactFormData', JSON.stringify({ name, email }));
-      
-      const results = {
+      // Calculate required values
+      const score = calculateOverallScore(answers);
+      const healthCalculations = calculateHealthMetrics(answers);
+      const summary = generateSummary(answers);
+
+      console.log('Preparing assessment data for submission...', {
+        hasAnswers: !!answers,
+        hasHealthCalculations: !!healthCalculations,
+        score
+      });
+
+      // Log the full payload for debugging
+      const payload = {
+        name,
+        email,
         answers,
         assessmentResults: {
-          score: calculateOverallScore(answers),
-          healthCalculations: calculateHealthMetrics(answers),
-          summary: generateSummary(answers)
+          score,
+          healthCalculations,
+          summary
         },
         timestamp: Date.now()
       };
-      
-      sessionStorage.setItem('temporaryResults', JSON.stringify(results));
-      
-      if (db) {
-        // Save to Firestore as a lead
-        const leadRef = doc(collection(db, 'leads'));
-        await setDoc(leadRef, {
-          email,
-          name,
-          ...results,
-          createdAt: serverTimestamp()
-        });
+      console.log('Full submission payload:', payload);
+
+      // First attempt - API route
+      console.log('Attempting to save via API route...');
+      const response = await fetch('/api/leads', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('API route save failed:', errorData);
+        throw new Error(errorData.error || 'Failed to save assessment data');
       }
 
-      const encodedResults = encodeURIComponent(JSON.stringify(results));
-      await router.push(`/results?results=${encodedResults}`);
-      
+      const data = await response.json();
+      console.log('API route save successful:', data);
+
+      // Store in session for immediate access
+      const resultsData = {
+        answers,
+        assessmentResults: {
+          score,
+          healthCalculations,
+          summary
+        },
+        timestamp: Date.now()
+      };
+      sessionStorage.setItem('temporaryResults', JSON.stringify(resultsData));
+      console.log('Assessment data stored in session storage');
+
+      // Navigate to results page
+      const encodedResults = encodeURIComponent(JSON.stringify(resultsData));
+      router.push(`/results?results=${encodedResults}`);
+
     } catch (error) {
-      console.error('Error submitting contact info:', error);
+      console.error('Detailed submission error:', {
+        error,
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+        errorStack: error instanceof Error ? error.stack : undefined
+      });
       setSubmitError('Failed to save your information. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
-  }, [answers, router, isSubmitting]);
+  }, [answers, calculateOverallScore, calculateHealthMetrics, generateSummary, router]);
 
   return (
     <div className="fixed-height-container">

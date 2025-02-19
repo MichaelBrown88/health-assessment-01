@@ -22,23 +22,17 @@ export function calculateHealthMetrics(answers: AnswerType): HealthCalculations 
     isBodyFatEstimated = true
   }
 
-  // Calculate Ideal Weight Range (Hamwi Formula)
+  // Calculate Ideal Weight Range using BMI method
   let idealWeightLow = null
   let idealWeightHigh = null
   
   if (height > 0) {
-    const heightInInches = height / 2.54
-    const baseHeight = 60 // 5 feet in inches
+    const heightInMeters = height / 100
+    const minBMI = 18.5
+    const maxBMI = 24.9
     
-    if (gender === 'male') {
-      const idealWeight = 48 + 2.7 * (heightInInches - baseHeight)
-      idealWeightLow = (idealWeight * 0.9) * 0.453592 // Convert to kg
-      idealWeightHigh = (idealWeight * 1.1) * 0.453592
-    } else {
-      const idealWeight = 45.5 + 2.2 * (heightInInches - baseHeight)
-      idealWeightLow = (idealWeight * 0.9) * 0.453592
-      idealWeightHigh = (idealWeight * 1.1) * 0.453592
-    }
+    idealWeightLow = Math.round(minBMI * Math.pow(heightInMeters, 2))
+    idealWeightHigh = Math.round(maxBMI * Math.pow(heightInMeters, 2))
   }
 
   // Calculate BMR using Harris-Benedict Equation
@@ -55,7 +49,7 @@ export function calculateHealthMetrics(answers: AnswerType): HealthCalculations 
   // Calculate section scores
   const exerciseScore = calculateExerciseScore(answers)
   const nutritionScore = calculateNutritionScore(answers)
-  const wellbeingScore = calculateWellbeingScore(answers)
+  const mentalHealthScore = calculateMentalHealthScore(answers)
   const sleepScore = calculateSleepScore(answers)
 
   return {
@@ -73,7 +67,7 @@ export function calculateHealthMetrics(answers: AnswerType): HealthCalculations 
     fatGrams,
     exerciseScore,
     nutritionScore,
-    wellbeingScore,
+    mentalHealthScore,
     sleepScore
   }
 }
@@ -156,222 +150,154 @@ function calculateMacronutrients(
 
 // Scoring functions
 function calculateExerciseScore(answers: AnswerType): number {
-  const { exerciseFrequency, exerciseIntensity, exerciseDuration } = answers
-  let score = 75 // Base score
+  const { activityLevel, exerciseIntensity, exerciseDuration, exerciseType } = answers
+  let score = 0
 
-  // Exercise Frequency scoring
-  switch (exerciseFrequency) {
-    case 'never':
-      score -= 30
-      break
-    case 'rarely':
-      score -= 20
-      break
-    case 'sometimes':
-      score -= 10
-      break
-    case 'frequently':
-      score += 10
-      break
-    case 'very-frequently':
-      score += 15
-      break
+  // Activity Level scoring (max 12 points)
+  const activityScores: Record<string, number> = {
+    sedentary: 2,
+    light: 5,
+    moderate: 8,
+    active: 10,
+    'very-active': 12
+  }
+  score += activityScores[String(activityLevel)] || 0
+
+  // Exercise Intensity scoring (max 6 points)
+  const intensityScores: Record<string, number> = {
+    light: 2,
+    moderate: 4,
+    vigorous: 6,
+    'very-intense': 5
+  }
+  score += intensityScores[String(exerciseIntensity)] || 0
+
+  // Exercise Duration scoring (max 6 points)
+  const durationScores: Record<string, number> = {
+    'less-than-30': 2,
+    '30-45': 4,
+    '45-60': 6,
+    '60+': 5
+  }
+  score += durationScores[String(exerciseDuration)] || 0
+
+  // Exercise Type scoring (max 6 points)
+  if (Array.isArray(exerciseType)) {
+    score += Math.min(6, exerciseType.length * 2)
   }
 
-  // Exercise Intensity scoring
-  switch (exerciseIntensity) {
-    case 'light':
-      score -= 5
-      break
-    case 'moderate':
-      score += 5
-      break
-    case 'vigorous':
-      score += 10
-      break
-  }
-
-  // Exercise Duration scoring
-  switch (exerciseDuration) {
-    case 'less-than-15':
-      score -= 10
-      break
-    case '15-30':
-      score -= 5
-      break
-    case '30-45':
-      score += 5
-      break
-    case '45-60':
-      score += 10
-      break
-    case 'more-than-60':
-      score += 15
-      break
-  }
-
-  return Math.max(0, Math.min(100, score))
+  return Math.min(30, score)
 }
 
 function calculateNutritionScore(answers: AnswerType): number {
-  const { dietQuality, mealFrequency, waterIntake } = answers
-  let score = 75 // Base score
+  const { diet, mealFrequency, lastMeal, goals } = answers
+  let score = 0
 
-  // Diet Quality scoring
-  switch (dietQuality) {
-    case 'poor':
-      score -= 30
-      break
-    case 'fair':
-      score -= 15
-      break
-    case 'good':
-      score += 10
-      break
-    case 'excellent':
-      score += 15
-      break
+  // Diet Quality scoring (max 15 points)
+  const dietScores: Record<string, number> = {
+    unhealthy: 0,
+    average: 8,
+    healthy: 12,
+    'very-healthy': 15
   }
+  score += dietScores[String(diet)] || 0
 
-  // Meal Frequency scoring
-  switch (mealFrequency) {
-    case '1-2':
-      score -= 15
-      break
-    case '2-3':
-      score -= 5
-      break
-    case '3-4':
+  // Meal Frequency scoring (max 5 points)
+  const frequencyScores: Record<string, number> = {
+    '1-2': 2,
+    '3-4': 5,
+    '5+': 4
+  }
+  score += frequencyScores[String(mealFrequency)] || 0
+
+  // Last Meal Timing scoring (max 5 points)
+  const mealTimingScores: Record<string, number> = {
+    'before-6pm': 5,
+    '6pm-8pm': 5,
+    '8pm-10pm': 3,
+    'after-10pm': 1
+  }
+  score += mealTimingScores[String(lastMeal)] || 0
+
+  // Goals alignment scoring (max 5 points)
+  if (Array.isArray(goals)) {
+    if (goals.some(goal => ['weight-loss', 'muscle-gain', 'overall-health'].includes(goal))) {
       score += 5
-      break
-    case '4-5':
-      score += 10
-      break
-    case '5+':
-      score -= 5 // Too frequent might not be optimal
-      break
+    }
   }
 
-  // Water Intake scoring
-  switch (waterIntake) {
-    case 'less-than-1L':
-      score -= 20
-      break
-    case '1-2L':
-      score -= 10
-      break
-    case '2-3L':
-      score += 10
-      break
-    case 'more-than-3L':
-      score += 15
-      break
-  }
-
-  return Math.max(0, Math.min(100, score))
+  return Math.min(30, score)
 }
 
-function calculateWellbeingScore(answers: AnswerType): number {
-  const { stressLevel, mentalHealth, workLifeBalance } = answers
-  let score = 75 // Base score
+function calculateMentalHealthScore(answers: AnswerType): number {
+  let score = 0;
+  const mentalHealth = answers.mentalHealth;
+  const socializing = answers.socializing;
+  const stress = answers.stress;
 
-  // Stress Level scoring
-  switch (stressLevel) {
-    case 'very-high':
-      score -= 30
-      break
-    case 'high':
-      score -= 20
-      break
-    case 'moderate':
-      score -= 10
-      break
-    case 'low':
-      score += 10
-      break
-    case 'very-low':
-      score += 15
-      break
-  }
+  // Mental Health scoring (max 12 points)
+  const mentalHealthScores: Record<string, number> = {
+    'never': 12,          // Never or almost never feel down/anxious
+    'rarely': 9,          // Rarely (few times a month)
+    'sometimes': 6,       // Sometimes (few times a week)
+    'often': 3           // Often (most days)
+  };
+  score += mentalHealthScores[String(mentalHealth)] || 0;
 
-  // Mental Health scoring
-  switch (mentalHealth) {
-    case 'poor':
-      score -= 30
-      break
-    case 'fair':
-      score -= 15
-      break
-    case 'good':
-      score += 10
-      break
-    case 'excellent':
-      score += 15
-      break
-  }
+  // Social Activity scoring (max 10 points)
+  const socialScores: Record<string, number> = {
+    'frequently': 10,     // 3 or more times a week
+    'regularly': 8,       // 1-2 times a week
+    'occasionally': 5,    // 1-2 times a month
+    'rarely': 2          // less than once a month
+  };
+  score += socialScores[String(socializing)] || 0;
 
-  // Work-Life Balance scoring
-  switch (workLifeBalance) {
-    case 'poor':
-      score -= 20
-      break
-    case 'fair':
-      score -= 10
-      break
-    case 'good':
-      score += 10
-      break
-    case 'excellent':
-      score += 15
-      break
-  }
+  // Stress Level scoring (max 8 points)
+  const stressScores: Record<string, number> = {
+    'low': 8,
+    'moderate': 6,
+    'high': 3,
+    'very-high': 1
+  };
+  score += stressScores[String(stress)] || 0;
 
-  return Math.max(0, Math.min(100, score))
+  // Convert to 0-100 scale
+  return Math.min(100, (score / 30) * 100);
 }
 
 function calculateSleepScore(answers: AnswerType): number {
-  const { sleepDuration, sleepQuality } = answers
-  let score = 75 // Base score
+  const { sleepDuration, sleepQuality, recovery } = answers
+  let score = 0
 
-  // Sleep Duration scoring
-  switch (sleepDuration) {
-    case 'less-than-5':
-      score -= 30
-      break
-    case '5-6':
-      score -= 20
-      break
-    case '6-7':
-      score -= 10
-      break
-    case '7-8':
-      score += 15
-      break
-    case '8-9':
-      score += 10
-      break
-    case 'more-than-9':
-      score -= 5 // Too much sleep might not be optimal
-      break
+  // Sleep Duration scoring (max 10 points)
+  const durationScores: Record<string, number> = {
+    'less-than-5': 0,
+    '5-7': 5,
+    '7-9': 10,
+    'more-than-9': 7
   }
+  score += durationScores[String(sleepDuration)] || 0
 
-  // Sleep Quality scoring
-  switch (sleepQuality) {
-    case 'poor':
-      score -= 25
-      break
-    case 'fair':
-      score -= 10
-      break
-    case 'good':
-      score += 10
-      break
-    case 'excellent':
-      score += 15
-      break
+  // Sleep Quality scoring (max 10 points)
+  const qualityScores: Record<string, number> = {
+    poor: 0,
+    fair: 4,
+    good: 7,
+    excellent: 10
   }
+  score += qualityScores[String(sleepQuality)] || 0
 
-  return Math.max(0, Math.min(100, score))
+  // Recovery scoring (max 10 points)
+  const recoveryScores: Record<string, number> = {
+    poor: 0,
+    fair: 3,
+    good: 7,
+    excellent: 10
+  }
+  score += recoveryScores[String(recovery)] || 0
+
+  return Math.min(30, score)
 }
 
 function getBMICategory(bmi: number): string {

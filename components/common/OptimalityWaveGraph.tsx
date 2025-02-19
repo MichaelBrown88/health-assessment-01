@@ -1,7 +1,8 @@
 import React from 'react';
 import { Line, LineChart, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { scaleLinear } from 'd3-scale';
-import { calculateMetricDeviation } from '@/lib/metricCalculations';
+import { calculateHealthMetrics } from '@/utils/healthUtils';
+import type { HealthCalculations } from '@/types/results';
 
 // Simplified metric type that only includes what we need
 interface HealthMetric {
@@ -33,13 +34,16 @@ const OptimalityWaveGraph: React.FC<OptimalityWaveGraphProps> = ({
     .domain([-1, 0, 1])
     .range(['#EF4444', '#34D399', '#EF4444']);
 
-  const data: ChartDataPoint[] = healthMetrics.map(metric => ({
-    date: metric.date,
-    ...calculateMetricDeviation({
-      metrics: metric.metrics,
-      answers: metric.answers
-    } as Parameters<typeof calculateMetricDeviation>[0])
-  }));
+  const data: ChartDataPoint[] = healthMetrics.map(metric => {
+    const calculations = calculateHealthMetrics(metric.answers);
+    return {
+      date: metric.date,
+      exerciseDeviation: (calculations.exerciseScore - 75) / 75, // Normalize to [-1, 1]
+      nutritionDeviation: (calculations.nutritionScore - 75) / 75,
+      mentalHealthDeviation: (calculations.mentalHealthScore - 75) / 75,
+      sleepDeviation: (calculations.sleepScore - 75) / 75
+    };
+  });
 
   return (
     <div className="wave-graph">

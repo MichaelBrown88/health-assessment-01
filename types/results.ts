@@ -3,7 +3,7 @@ export interface HealthScore {
   categories: {
     exercise: number;
     nutrition: number;
-    wellbeing: number;
+    mentalHealth: number;
   };
 }
 
@@ -28,7 +28,7 @@ export interface ResultsSummary {
   analysis: {
     exercise: AnalysisSection;
     nutrition: AnalysisSection;
-    wellbeing: AnalysisSection;
+    mentalHealth: AnalysisSection;
   };
 }
 
@@ -47,7 +47,7 @@ export interface HealthCalculations {
   fatGrams: number | null;
   exerciseScore: number;
   nutritionScore: number;
-  wellbeingScore: number;
+  mentalHealthScore: number;
   sleepScore: number;
 }
 
@@ -76,7 +76,7 @@ export interface DecodedResults {
     summary: {
       exercise: string;
       nutrition: string;
-      wellbeing: string;
+      mentalHealth: string;
     };
   };
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import {
@@ -20,16 +20,35 @@ import {
   BarChart, 
   Shield,
   LogIn,
+  History,
 } from 'lucide-react'
 import { PaywallModal } from '@/components/premium/PaywallModal'
 import { AuthModal } from '@/components/auth/AuthModal'
+import { getUserAssessments } from '@/lib/db'
+import { useAsync } from '@/hooks/useAsync'
+import type { Assessment } from '@/types/assessment'
 
 export function UserProfile() {
-  const { user, isAdmin, logout } = useAuth()
+  const { user, isAdmin, isPremium, logout } = useAuth()
   const router = useRouter()
   const [showPaywall, setShowPaywall] = useState(false)
   const [showAuth, setShowAuth] = useState(false)
   const [authMode, setAuthMode] = useState<'signup' | 'login' | 'admin'>('login')
+  const { data: assessments = [], execute } = useAsync<Assessment[]>()
+
+  useEffect(() => {
+    if (user && !user.isAnonymous) {
+      execute(() => getUserAssessments(user.uid))
+    }
+  }, [user, execute])
+
+  const latestAssessment = assessments && assessments.length > 0 
+    ? assessments.sort((a, b) => {
+        const dateA = new Date(a.createdAt || 0)
+        const dateB = new Date(b.createdAt || 0)
+        return dateB.getTime() - dateA.getTime()
+      })[0]
+    : null
 
   const handleAuthClick = (mode: 'signup' | 'login' | 'admin') => {
     setAuthMode(mode)
@@ -51,9 +70,17 @@ export function UserProfile() {
               <DropdownMenuLabel className="font-normal">
                 <div className="flex flex-col space-y-1">
                   <p className="text-sm font-medium text-white">{user.email}</p>
-                  <p className="text-xs text-gray-400">
-                    {isAdmin ? 'Administrator' : 'Member'}
-                  </p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-xs text-gray-400">
+                      {isAdmin ? 'Administrator' : user.isAnonymous ? 'Guest User' : 'Member'}
+                    </p>
+                    {isPremium && (
+                      <span className="text-xs px-2 py-0.5 bg-purple-500/20 text-purple-300 rounded-full flex items-center gap-1">
+                        <Crown className="h-3 w-3" />
+                        Premium
+                      </span>
+                    )}
+                  </div>
                 </div>
               </DropdownMenuLabel>
               
@@ -67,15 +94,17 @@ export function UserProfile() {
                 <span>Take Assessment</span>
               </DropdownMenuItem>
 
-              {isAdmin ? (
+              {!user.isAnonymous && latestAssessment && (
                 <DropdownMenuItem 
-                  onClick={() => router.push('/admin/dashboard')}
+                  onClick={() => router.push(`/results?id=${latestAssessment.id}`)}
                   className="text-gray-200 hover:text-white hover:bg-purple-500/10 cursor-pointer py-2"
                 >
-                  <Shield className="mr-2 h-4 w-4" />
-                  <span>Admin Dashboard</span>
+                  <History className="mr-2 h-4 w-4" />
+                  <span>Latest Results</span>
                 </DropdownMenuItem>
-              ) : (
+              )}
+
+              {!user.isAnonymous && (
                 <DropdownMenuItem 
                   onClick={() => router.push('/dashboard')}
                   className="text-gray-200 hover:text-white hover:bg-purple-500/10 cursor-pointer py-2"
@@ -84,16 +113,37 @@ export function UserProfile() {
                   <span>Dashboard</span>
                 </DropdownMenuItem>
               )}
-              
-              <DropdownMenuSeparator className="bg-gray-800" />
-              
-              <DropdownMenuItem 
-                onClick={() => logout()}
-                className="text-gray-200 hover:text-white hover:bg-purple-500/10 cursor-pointer py-2"
-              >
-                <LogOut className="mr-2 h-4 w-4" />
-                <span>Log out</span>
-              </DropdownMenuItem>
+
+              {!isPremium && (
+                <DropdownMenuItem 
+                  onClick={() => router.push('/premium')}
+                  className="text-purple-300 hover:text-purple-200 hover:bg-purple-500/10 cursor-pointer py-2"
+                >
+                  <Crown className="mr-2 h-4 w-4" />
+                  <span>Upgrade to Premium</span>
+                </DropdownMenuItem>
+              )}
+
+              {user.isAnonymous ? (
+                <>
+                  <DropdownMenuSeparator className="bg-gray-800" />
+                  <DropdownMenuItem 
+                    onClick={() => handleAuthClick('signup')}
+                    className="text-blue-400 hover:text-blue-300 hover:bg-purple-500/10 cursor-pointer py-2"
+                  >
+                    <LogIn className="mr-2 h-4 w-4" />
+                    <span>Create Account to Save Progress</span>
+                  </DropdownMenuItem>
+                </>
+              ) : (
+                <DropdownMenuItem 
+                  onClick={() => logout()}
+                  className="text-gray-200 hover:text-white hover:bg-purple-500/10 cursor-pointer py-2"
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Log out</span>
+                </DropdownMenuItem>
+              )}
             </>
           ) : (
             <>
@@ -108,8 +158,8 @@ export function UserProfile() {
               <DropdownMenuSeparator className="bg-gray-800" />
               
               <DropdownMenuItem 
-                onClick={() => setShowPaywall(true)}
-                className="text-yellow-400 hover:text-yellow-300 hover:bg-purple-500/10 cursor-pointer py-2"
+                onClick={() => router.push('/premium')}
+                className="text-purple-300 hover:text-purple-200 hover:bg-purple-500/10 cursor-pointer py-2"
               >
                 <Crown className="mr-2 h-4 w-4" />
                 <span>Premium Features</span>

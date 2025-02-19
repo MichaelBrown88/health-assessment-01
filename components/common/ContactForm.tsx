@@ -8,7 +8,6 @@ import { useToast } from "@/components/ui/use-toast"
 import { Checkbox } from "@/components/ui/checkbox"
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { saveLeadData } from '@/lib/db'
 
 interface ContactFormProps {
   onSubmit: (name: string, email: string) => void
@@ -49,30 +48,28 @@ export const ContactForm: React.FC<ContactFormProps> = ({
     setIsSubmitting(true)
 
     try {
-      // Use the existing assessmentResults passed as props
-      const resultsData = {
+      // Store in sessionStorage for immediate access
+      sessionStorage.setItem('temporaryResults', JSON.stringify({
         answers,
         assessmentResults,
         timestamp: Date.now()
-      }
+      }))
+      sessionStorage.setItem('contactFormData', JSON.stringify({ name, email }))
 
-      // Store in sessionStorage
-      sessionStorage.setItem('temporaryResults', JSON.stringify(resultsData))
-
-      // Call parent's onSubmit
+      // Call parent's onSubmit handler
       await onSubmit(name, email)
-
-      // Encode results for URL
-      const encodedResults = encodeURIComponent(JSON.stringify(resultsData))
-      
-      // Navigate to results page
-      router.push(`/results?results=${encodedResults}`)
 
     } catch (error) {
       console.error('Submission error:', error)
+      let errorMessage = 'Failed to process your submission. Please try again.'
+      
+      if (error instanceof Error) {
+        errorMessage = error.message
+      }
+      
       toast({
         title: "Error",
-        description: "Failed to process your submission. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       })
     } finally {

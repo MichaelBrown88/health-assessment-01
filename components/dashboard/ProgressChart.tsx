@@ -1,8 +1,8 @@
 'use client';
 
 import { Line } from 'react-chartjs-2';
-import { calculateExerciseScore } from '@/lib/metricCalculations';
-import type { ExerciseFactors } from '@/lib/metricCalculations';
+import { calculateHealthMetrics } from '@/utils/healthUtils';
+import type { HealthCalculations } from '@/types/results';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -56,13 +56,20 @@ export const ProgressChart: React.FC<ProgressChartProps> = ({ assessments }) => 
       },
       {
         label: 'Exercise Score',
-        data: sortedAssessments.map(a => calculateExerciseScore({
-          frequency: a.answers.exerciseFrequency as number,
-          duration: a.answers.exerciseDuration as number,
-          intensity: a.answers.exerciseIntensity as string,
-          recoveryDays: a.answers.recoveryDays as number
-        } as ExerciseFactors)),
+        data: sortedAssessments.map(a => calculateHealthMetrics(a.answers).exerciseScore),
         borderColor: 'rgb(255, 99, 132)',
+        tension: 0.1
+      },
+      {
+        label: 'Mental Health Score',
+        data: sortedAssessments.map(a => calculateHealthMetrics(a.answers).mentalHealthScore),
+        borderColor: 'rgb(153, 102, 255)',
+        tension: 0.1
+      },
+      {
+        label: 'Sleep Score',
+        data: sortedAssessments.map(a => calculateHealthMetrics(a.answers).sleepScore),
+        borderColor: 'rgb(255, 159, 64)',
         tension: 0.1
       }
     ]

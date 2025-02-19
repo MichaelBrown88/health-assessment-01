@@ -1,3 +1,18 @@
+export interface Assessment {
+  id?: string;
+  userId?: string;
+  answers: AnswerType;
+  createdAt: Date | { seconds: number; nanoseconds: number };
+  metrics: {
+    overallScore: number;
+    exerciseScore: number;
+    nutritionScore: number;
+    wellbeingScore: number;
+    sleepScore: number;
+  };
+  healthCalculations: HealthCalculations;
+}
+
 export interface HealthCalculations {
   bmi: number | null;
   bmr: number | null;

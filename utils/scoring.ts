@@ -6,14 +6,14 @@ export function calculateScore(answers: AnswerType, healthCalculations: HealthCa
   const weights = {
     exercise: 0.3,    // 30%
     nutrition: 0.3,   // 30%
-    wellbeing: 0.2,   // 20%
+    mentalHealth: 0.2,   // 20%
     sleep: 0.2        // 20%
   };
 
   const weightedScore = 
     (healthCalculations.exerciseScore * weights.exercise) +
     (healthCalculations.nutritionScore * weights.nutrition) +
-    (healthCalculations.wellbeingScore * weights.wellbeing) +
+    (healthCalculations.mentalHealthScore * weights.mentalHealth) +
     (healthCalculations.sleepScore * weights.sleep);
 
   // Add BMI adjustment
@@ -45,6 +45,15 @@ export function getHealthGoalAdvice(goals: string[]): string[] {
   };
   
   return goals.map(goal => advice[goal] || 'Set specific, measurable health goals.');
+}
+
+export function calculateOverallScore(healthCalculations: HealthCalculations): number {
+  return Math.round(
+    (healthCalculations.exerciseScore * weights.exercise) +
+    (healthCalculations.nutritionScore * weights.nutrition) +
+    (healthCalculations.mentalHealthScore * weights.mentalHealth) +
+    (healthCalculations.sleepScore * weights.sleep)
+  )
 }
 
 // ... other scoring-related functions ... 
