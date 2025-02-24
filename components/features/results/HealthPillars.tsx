@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils"
+import { Card } from "@/components/core/card"
 import type { HealthPillarScores } from "@/types/scoring"
 import {
   Tooltip,
@@ -35,7 +36,7 @@ export function HealthPillars({ pillarScores, answers, healthCalculations, score
   };
 
   return (
-    <section className="bg-gray-800/50 rounded-lg p-8 border border-gray-700/50">
+    <Card className="p-8">
       <div className="flex items-center justify-between mb-8">
         <h2 className="text-xl font-semibold">Health Pillars</h2>
         <AICoachButton 
@@ -104,6 +105,6 @@ export function HealthPillars({ pillarScores, answers, healthCalculations, score
           );
         })}
       </div>
-    </section>
+    </Card>
   );
 } 

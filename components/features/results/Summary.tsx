@@ -1,5 +1,6 @@
 import { Star, TrendingUp, AlertCircle, ArrowRight, Target, BarChart } from "lucide-react";
 import type { HealthCalculations } from "@/types/results";
+import { Card } from "@/components/core/card"
 
 const SCORING_WEIGHTS = {
   exercise: 0.3,    // 30%
@@ -242,7 +243,7 @@ export function Summary({ answers, healthCalculations, getFeedbackColor }: Summa
   };
 
   return (
-    <section className="bg-gray-800/50 rounded-lg p-6 border border-gray-700/50">
+    <Card className="p-6">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-semibold">Assessment Summary & Action Plan</h2>
         <div className="flex items-center space-x-2">
@@ -330,6 +331,6 @@ export function Summary({ answers, healthCalculations, getFeedbackColor }: Summa
           </li>
         </ul>
       </div>
-    </section>
+    </Card>
   );
 } 

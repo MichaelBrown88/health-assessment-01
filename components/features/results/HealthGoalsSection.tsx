@@ -16,7 +16,7 @@ export function HealthGoalsSection({ answers, healthCalculations, score }: Healt
   const goals = answers.goals as string[];
 
   return (
-    <Card className="bg-black/30 backdrop-blur-sm border-gray-800">
+    <Card>
       <div className="p-6">
         <div className="flex justify-between gap-4 mb-4">
           <h3 className="text-xl font-semibold leading-tight">Health Goals</h3>
@@ -31,14 +31,14 @@ export function HealthGoalsSection({ answers, healthCalculations, score }: Healt
                 <TabsTrigger
                   key={goal}
                   value={goal}
-                  className="flex-1 data-[state=active]:bg-blue-500/20 data-[state=active]:text-white transition-all duration-200 ease-in-out"
+                  className="flex-1 data-[state=active]:bg-black/40 data-[state=active]:text-white transition-all duration-200 ease-in-out"
                 >
                   {goal.replace('-', ' ')}
                 </TabsTrigger>
               ))}
             </TabsList>
             {goals.map((goal) => (
-              <TabsContent key={goal} value={goal} className="mt-4 p-4 bg-black/10 rounded-lg">
+              <TabsContent key={goal} value={goal} className="mt-4 p-4 bg-black/20 rounded-lg">
                 <p>{getHealthGoalAdvice([goal])[0]}</p>
               </TabsContent>
             ))}

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Sparkles } from 'lucide-react'
 import { PaywallModal } from "@/components/premium/PaywallModal"
 import { AICoachButton } from '@/components/ai/AICoachButton'
+import { Card } from '@/components/core/card'
 import type { User } from 'firebase/auth'
 
 interface CTASectionProps {
@@ -24,8 +25,8 @@ export function CTASection({ user }: CTASectionProps) {
   }
 
   return (
-    <section className="bg-gray-800/50 rounded-lg p-8 border border-gray-700/50">
-      <div className="text-center">
+    <Card>
+      <div className="p-8 text-center">
         <div className="flex items-center justify-center mb-6">
           <Sparkles className="w-5 h-5 text-white/70 mr-2" />
           <h2 className="text-xl font-semibold">Unlock Premium Features</h2>
@@ -51,6 +52,6 @@ export function CTASection({ user }: CTASectionProps) {
           onClose={() => setShowPaywall(false)}
         />
       )}
-    </section>
+    </Card>
   )
 } 

@@ -1,6 +1,7 @@
 'use client'
 
 import { cn } from "@/lib/utils"
+import { Card } from "@/components/core/card"
 import {
   Tooltip,
   TooltipContent,
@@ -15,7 +16,7 @@ interface HealthScoreSectionProps {
 export function HealthScoreSection({ score }: HealthScoreSectionProps) {
   return (
     <TooltipProvider delayDuration={0}>
-      <section className="bg-gray-800/50 rounded-lg p-8 border border-gray-700/50 text-center">
+      <Card className="p-8 text-center">
         <Tooltip>
           <TooltipTrigger asChild>
             <div className="cursor-pointer">
@@ -72,7 +73,7 @@ export function HealthScoreSection({ score }: HealthScoreSectionProps) {
             </p>
           </TooltipContent>
         </Tooltip>
-      </section>
+      </Card>
     </TooltipProvider>
   );
 } 

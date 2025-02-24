@@ -8,6 +8,7 @@ import { Button } from "@/components/core/button"
 import { AlertTriangle, X } from "lucide-react"
 import { Alert } from "@/components/core/alert"
 import type { HealthCalculations } from "@/types/results"
+import { cn } from "@/lib/utils"
 
 interface HealthMetricsCardProps {
   title: React.ReactNode;
@@ -50,61 +51,57 @@ export function HealthMetricsCard({
   return (
     <TooltipProvider>
       <div className="relative h-full">
-        <Card className={`bg-gray-800/50 rounded-lg p-6 border border-gray-700/50 ${className}`}>
-          <div className="flex justify-between gap-4 mb-4">
-            <h3 className="text-xl font-semibold leading-tight">
-              {title}
-            </h3>
-            <div className="flex-shrink-0 mt-1">
-              <AICoachButton 
-                assessmentData={{
-                  answers,
-                  healthCalculations,
-                  score: score ?? 0
-                }}
-              />
+        <Card className={cn("h-full", className)}>
+          <div className="p-6">
+            <div className="flex justify-between gap-4 mb-4">
+              <h3 className="text-xl font-semibold leading-tight">
+                {title}
+              </h3>
+              <div className="flex-shrink-0 mt-1">
+                <AICoachButton assessmentData={{ answers, healthCalculations, score }} />
+              </div>
             </div>
-          </div>
 
-          {warning && (
-            <div className="mb-4 p-4 bg-gray-800/30 rounded-lg border border-gray-700/30">
-              <h4 className="font-medium mb-2 text-amber-400">{warning.title}</h4>
-              <p className="text-gray-300">{warning.message}</p>
-              {warning.shouldRetake && (
-                <p className="text-sm text-gray-400 mt-2">Consider retaking the assessment with adjusted goals.</p>
-              )}
+            {warning && (
+              <div className="mb-4 p-4 bg-gray-800/30 rounded-lg border border-gray-700/30">
+                <h4 className="font-medium mb-2 text-amber-400">{warning.title}</h4>
+                <p className="text-gray-300">{warning.message}</p>
+                {warning.shouldRetake && (
+                  <p className="text-sm text-gray-400 mt-2">Consider retaking the assessment with adjusted goals.</p>
+                )}
+              </div>
+            )}
+
+            <div className="flex-1">
+              {children}
             </div>
-          )}
 
-          <div className="flex-1">
-            {children}
-          </div>
+            {footer && (
+              <p className="text-sm text-gray-400 mt-4">{footer}</p>
+            )}
 
-          {footer && (
-            <p className="text-sm text-gray-400 mt-4">{footer}</p>
-          )}
-
-          {/* Minimized warning that stays at bottom */}
-          {showMinimizedWarning && warning && (
-            <div 
-              className="mt-4 flex items-center gap-2 bg-yellow-950/50 border border-yellow-600/50 rounded-lg p-2 cursor-pointer hover:bg-yellow-950/70 transition-colors"
-              onClick={handleWarningToggle}
-            >
-              <AlertTriangle className="h-4 w-4 text-yellow-500 flex-shrink-0" />
-              <span className="text-sm text-yellow-200 flex-1">Click to review health notice</span>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  window.location.href = '/questions';
-                }}
-                className="text-xs whitespace-nowrap"
+            {/* Minimized warning that stays at bottom */}
+            {showMinimizedWarning && warning && (
+              <div 
+                className="mt-4 flex items-center gap-2 bg-yellow-950/50 border border-yellow-600/50 rounded-lg p-2 cursor-pointer hover:bg-yellow-950/70 transition-colors"
+                onClick={handleWarningToggle}
               >
-                Retake Assessment
-              </Button>
-            </div>
-          )}
+                <AlertTriangle className="h-4 w-4 text-yellow-500 flex-shrink-0" />
+                <span className="text-sm text-yellow-200 flex-1">Click to review health notice</span>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    window.location.href = '/questions';
+                  }}
+                  className="text-xs whitespace-nowrap"
+                >
+                  Retake Assessment
+                </Button>
+              </div>
+            )}
+          </div>
         </Card>
 
         {/* Modal warning overlay */}

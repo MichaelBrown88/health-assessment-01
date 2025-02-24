@@ -12,6 +12,7 @@ import { calculateScore } from '@/utils/scoring'
 import { HealthPillars } from '@/components/features/results/HealthPillars'
 import { HealthScoreSection } from '@/components/features/results/HealthScoreSection'
 import { HealthMetricsContainer } from '@/components/features/results/HealthMetricsContainer'
+import { HealthGoalsSection } from '@/components/features/results/HealthGoalsSection'
 import { FeedbackSections } from '@/components/features/results/FeedbackSections'
 import { CTASection } from '@/components/features/results/CTASection'
 import { ResultsLoading } from '@/components/features/results/ResultsLoading'
@@ -128,6 +129,12 @@ export default function ResultsPage() {
             <HealthMetricsContainer 
               healthCalculations={healthCalculations}
               answers={results.answers}
+              score={overallScore}
+            />
+
+            <HealthGoalsSection
+              answers={results.answers}
+              healthCalculations={healthCalculations}
               score={overallScore}
             />
 
