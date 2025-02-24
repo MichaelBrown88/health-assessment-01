@@ -18,6 +18,16 @@
 - Question flow and functionality are approved
 - All features are locked and working as intended
 
+### Results Page
+
+**Status: LOCKED** 🔒
+
+- Card design and layout are finalized
+- Health metrics visualization is locked
+- Feedback sections and styling are approved
+- Only AI Health Coach integration and user profile features can be modified
+- Any other changes require explicit approval
+
 ## ⚠️ Important Notice
 
 Before making any modifications to the locked pages listed above:
@@ -36,3 +46,4 @@ Before making any modifications to the locked pages listed above:
 ## Version History
 
 - Initial lock: [Current Date] - Welcome Page and Questions Page locked
+- Update: [Current Date] - Results Page locked (except AI Health Coach and user profile features)
