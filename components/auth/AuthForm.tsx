@@ -2,11 +2,11 @@
 
 import { useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
-import { Alert } from '@/components/ui/alert'
+import { Alert } from '@/components/core/alert'
 import { handleError } from '@/utils/error-handling'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import { Button } from '@/components/core/button'
+import { Input } from '@/components/core/input'
+import { Label } from '@/components/core/label'
 
 interface AuthFormProps {
   mode: 'signup' | 'login' | 'admin';

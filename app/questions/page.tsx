@@ -3,19 +3,20 @@
 import { useReducer, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
-import { Card } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Label } from "@/components/ui/label"
-import { SpaceTheme } from '@/components/layout/SpaceTheme'
-import { QuestionRenderer } from '@/components/assessment/QuestionRenderer'
-import { ContactForm } from '@/components/common/ContactForm'
+import { Card } from "@/components/core/card"
+import { Button } from "@/components/core/button"
+import { Label } from "@/components/core/label"
+import { QuestionRenderer } from '@/components/features/assessment/QuestionRenderer'
+import { ContactForm } from '@/components/shared/common/ContactForm'
 import { questions } from '@/data/questions'
-import type { AnswerType } from '@/data/questions'
+import type { AnswerType } from '@/types/results'
 import { cn } from '@/lib/utils'
-import { calculateHealthMetrics as calculateMetrics } from '@/utils/healthUtils'
+import { calculateHealthMetrics } from '@/utils/health'
+import { useQuestionNavigation } from '@/hooks/useQuestionNavigation'
+import { calculateScore } from '@/utils/scoring'
 
 // Add answer reducer
-const answerReducer = (state: AnswerType, action: { type: string; payload: { id: string; value: string | number | string[] } }) => {
+const answerReducer = (state: AnswerType, action: { type: string; payload: { id: string; value: string | number | boolean | string[] } }) => {
   switch (action.type) {
     case 'SET_ANSWER':
       return {
@@ -29,17 +30,78 @@ const answerReducer = (state: AnswerType, action: { type: string; payload: { id:
 
 export default function HealthAssessmentPage() {
   const [answers, dispatch] = useReducer(answerReducer, {})
-  const [currentQuestion, setCurrentQuestion] = useState(0)
+  const { currentQuestion, handleNext, handlePrevious } = useQuestionNavigation(questions, answers)
   const [showContactForm, setShowContactForm] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [resetMessage, setResetMessage] = useState(false)
-  const [isSubmitting, setIsSubmitting] = useState(false)
   const router = useRouter()
   const { user } = useAuth()
 
+  // Handle previous with reset
+  const handlePreviousWithReset = useCallback(() => {
+    if (currentQuestion === undefined || currentQuestion < 0) return;
+
+    let prevQuestion = currentQuestion - 1;
+    while (
+      prevQuestion >= 0 &&
+      questions[prevQuestion]?.condition &&
+      typeof questions[prevQuestion].condition === 'function' &&
+      questions[prevQuestion].condition?.(answers as AnswerType) === false
+    ) {
+      prevQuestion--;
+    }
+    
+    if (prevQuestion >= 0 && questions[prevQuestion] && questions[currentQuestion]) {
+      // If we're moving back to the body fat question
+      if (questions[currentQuestion].id === 'activityLevel' && questions[prevQuestion].id === 'bodyFat') {
+        const currentBodyFat = answers['bodyFat'];
+        
+        // First navigate back
+        handlePrevious();
+        
+        // Then start the animation sequence
+        if (currentBodyFat) {
+          // Brief delay to ensure we're on the right question
+          setTimeout(() => {
+            // Show the current value first
+            dispatch({ 
+              type: 'SET_ANSWER', 
+              payload: { 
+                id: 'bodyFat', 
+                value: currentBodyFat
+              } 
+            });
+            
+            // Show reset message
+            setResetMessage(true);
+            
+            // Then animate to default
+            setTimeout(() => {
+              dispatch({ 
+                type: 'SET_ANSWER', 
+                payload: { 
+                  id: 'bodyFat', 
+                  value: 20 // Default body fat value
+                } 
+              });
+              
+              // Hide reset message
+              setTimeout(() => {
+                setResetMessage(false);
+              }, 1000);
+            }, 1500);
+          }, 100);
+        }
+      } else {
+        // Normal navigation for other questions
+        handlePrevious();
+      }
+    }
+  }, [currentQuestion, questions, answers, handlePrevious, dispatch, setResetMessage]);
+
   // Wrap functions in useCallback
   const calculateOverallScore = useCallback((_answers: AnswerType): number => {
-    const healthMetrics = calculateMetrics(_answers)
+    const healthMetrics = calculateHealthMetrics(_answers)
     return Math.round(
       (healthMetrics.exerciseScore * 0.3) +
       (healthMetrics.nutritionScore * 0.3) +
@@ -48,26 +110,25 @@ export default function HealthAssessmentPage() {
     )
   }, [])
 
-  const calculateHealthMetrics = useCallback((answers: AnswerType) => {
-    const metrics = calculateMetrics(answers);
-    const healthCalculations: Record<string, string | number | null> = {
-      exerciseScore: metrics.exerciseScore ?? 0,
-      nutritionScore: metrics.nutritionScore ?? 0,
-      mentalHealthScore: metrics.mentalHealthScore ?? 0,
-      sleepScore: metrics.sleepScore ?? 0,
-      bmi: metrics.bmi,
-      bmiCategory: metrics.bmiCategory,
-      bmr: metrics.bmr,
-      tdee: metrics.tdee,
-      bodyFat: metrics.bodyFat,
-      idealWeightLow: metrics.idealWeightLow,
-      idealWeightHigh: metrics.idealWeightHigh,
-      recommendedCalories: metrics.recommendedCalories,
-      proteinGrams: metrics.proteinGrams,
-      carbGrams: metrics.carbGrams,
-      fatGrams: metrics.fatGrams
+  const computeHealthMetrics = useCallback((answers: AnswerType) => {
+    const metrics = calculateHealthMetrics(answers);
+    return {
+      bmi: typeof metrics.bmi === 'string' ? parseFloat(metrics.bmi) : metrics.bmi,
+      bmiCategory: String(metrics.bmiCategory),
+      bmr: typeof metrics.bmr === 'string' ? parseFloat(metrics.bmr) : metrics.bmr,
+      tdee: typeof metrics.tdee === 'string' ? parseFloat(metrics.tdee) : metrics.tdee,
+      bodyFat: typeof metrics.bodyFat === 'string' ? parseFloat(metrics.bodyFat) : metrics.bodyFat,
+      idealWeightLow: typeof metrics.idealWeightLow === 'string' ? parseFloat(metrics.idealWeightLow) : metrics.idealWeightLow,
+      idealWeightHigh: typeof metrics.idealWeightHigh === 'string' ? parseFloat(metrics.idealWeightHigh) : metrics.idealWeightHigh,
+      recommendedCalories: typeof metrics.recommendedCalories === 'string' ? parseFloat(metrics.recommendedCalories) : metrics.recommendedCalories,
+      proteinGrams: typeof metrics.proteinGrams === 'string' ? parseFloat(metrics.proteinGrams) : metrics.proteinGrams,
+      carbGrams: typeof metrics.carbGrams === 'string' ? parseFloat(metrics.carbGrams) : metrics.carbGrams,
+      fatGrams: typeof metrics.fatGrams === 'string' ? parseFloat(metrics.fatGrams) : metrics.fatGrams,
+      exerciseScore: typeof metrics.exerciseScore === 'string' ? parseFloat(metrics.exerciseScore) : metrics.exerciseScore || 0,
+      nutritionScore: typeof metrics.nutritionScore === 'string' ? parseFloat(metrics.nutritionScore) : metrics.nutritionScore || 0,
+      mentalHealthScore: typeof metrics.mentalHealthScore === 'string' ? parseFloat(metrics.mentalHealthScore) : metrics.mentalHealthScore || 0,
+      sleepScore: typeof metrics.sleepScore === 'string' ? parseFloat(metrics.sleepScore) : metrics.sleepScore || 0
     };
-    return healthCalculations;
   }, [])
 
   const getSectionSummary = useCallback((section: string, _answers: AnswerType): string => {
@@ -82,31 +143,21 @@ export default function HealthAssessmentPage() {
     };
   }, [getSectionSummary])
 
-  // Now define the useCallback hooks
-  const handleAnswer = useCallback((value: string | number | string[]) => {
+  const handleAnswer = useCallback((value: string | number | boolean | string[]) => {
     dispatch({ type: 'SET_ANSWER', payload: { id: questions[currentQuestion].id, value } })
   }, [currentQuestion])
 
-  const handleNext = useCallback(() => {
-    let nextQuestion = currentQuestion + 1
-    while (
-      nextQuestion < questions.length &&
-      questions[nextQuestion].condition &&
-      typeof questions[nextQuestion].condition === 'function' &&
-      questions[nextQuestion].condition?.(answers as AnswerType) === false
-    ) {
-      nextQuestion++
-    }
-    if (nextQuestion < questions.length) {
-      setCurrentQuestion(nextQuestion)
-    } else {
+  const handleQuestionNavigation = useCallback(() => {
+    const isComplete = handleNext()
+    if (isComplete) {
       // Skip contact form for authenticated users
       if (user) {
+        const healthMetrics = computeHealthMetrics(answers);
         const results = {
           answers,
           assessmentResults: {
-            score: calculateOverallScore(answers),
-            healthCalculations: calculateHealthMetrics(answers),
+            score: calculateScore(answers, healthMetrics),
+            healthCalculations: healthMetrics,
             summary: generateSummary(answers)
           }
         };
@@ -117,62 +168,21 @@ export default function HealthAssessmentPage() {
         setShowContactForm(true)
       }
     }
-  }, [currentQuestion, answers, user, router, calculateOverallScore, calculateHealthMetrics, generateSummary])
-
-  const handlePrevious = useCallback(() => {
-    let prevQuestion = currentQuestion - 1;
-    while (
-      prevQuestion >= 0 &&
-      questions[prevQuestion].condition &&
-      typeof questions[prevQuestion].condition === 'function' &&
-      questions[prevQuestion].condition?.(answers as AnswerType) === false
-    ) {
-      prevQuestion--;
-    }
-    if (prevQuestion >= 0) {
-      setCurrentQuestion(prevQuestion);
-      // Reset bodyFat when going back from the next question
-      if (questions[currentQuestion].id === 'activityLevel' && questions[prevQuestion].id === 'bodyFat') {
-        // Show reset message
-        setResetMessage(true);
-        
-        // Delay the actual reset
-        setTimeout(() => {
-          // Ensure defaultValue is a number
-          const defaultValue = Number(questions[prevQuestion].defaultValue) || 0;
-          
-          dispatch({ 
-            type: 'SET_ANSWER', 
-            payload: { 
-              id: 'bodyFat', 
-              value: defaultValue
-            } 
-          });
-          // Hide message after reset
-          setTimeout(() => {
-            setResetMessage(false);
-          }, 1000);
-        }, 300);
-      }
-    }
-  }, [currentQuestion, answers]);
+  }, [answers, user, router, computeHealthMetrics, generateSummary, handleNext])
 
   const handleContactInfoSubmit = useCallback(async (name: string, email: string) => {
     console.log('Starting contact info submission...', { name, email });
-    setIsSubmitting(true);
     setSubmitError(null);
 
     try {
-      // Calculate required values
-      const score = calculateOverallScore(answers);
-      const healthCalculations = calculateHealthMetrics(answers);
-      const summary = generateSummary(answers);
+      if (!name || !email) {
+        throw new Error('Name and email are required');
+      }
 
-      console.log('Preparing assessment data for submission...', {
-        hasAnswers: !!answers,
-        hasHealthCalculations: !!healthCalculations,
-        score
-      });
+      // Calculate required values
+      const score = calculateScore(answers, computeHealthMetrics(answers));
+      const healthCalculations = computeHealthMetrics(answers);
+      const summary = generateSummary(answers);
 
       // Log the full payload for debugging
       const payload = {
@@ -186,10 +196,8 @@ export default function HealthAssessmentPage() {
         },
         timestamp: Date.now()
       };
-      console.log('Full submission payload:', payload);
 
       // First attempt - API route
-      console.log('Attempting to save via API route...');
       const response = await fetch('/api/leads', {
         method: 'POST',
         headers: {
@@ -198,14 +206,11 @@ export default function HealthAssessmentPage() {
         body: JSON.stringify(payload),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('API route save failed:', errorData);
-        throw new Error(errorData.error || 'Failed to save assessment data');
-      }
-
       const data = await response.json();
-      console.log('API route save successful:', data);
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to save assessment data');
+      }
 
       // Store in session for immediate access
       const resultsData = {
@@ -218,27 +223,24 @@ export default function HealthAssessmentPage() {
         timestamp: Date.now()
       };
       sessionStorage.setItem('temporaryResults', JSON.stringify(resultsData));
-      console.log('Assessment data stored in session storage');
 
       // Navigate to results page
       const encodedResults = encodeURIComponent(JSON.stringify(resultsData));
       router.push(`/results?results=${encodedResults}`);
 
     } catch (error) {
-      console.error('Detailed submission error:', {
-        error,
-        errorMessage: error instanceof Error ? error.message : 'Unknown error',
-        errorStack: error instanceof Error ? error.stack : undefined
-      });
-      setSubmitError('Failed to save your information. Please try again.');
-    } finally {
-      setIsSubmitting(false);
+      console.error('Submission error:', error);
+      setSubmitError(
+        error instanceof Error 
+          ? error.message 
+          : 'An unexpected error occurred. Please try again.'
+      );
+      throw error; // Re-throw to be handled by the form's error handling
     }
-  }, [answers, calculateOverallScore, calculateHealthMetrics, generateSummary, router]);
+  }, [answers, computeHealthMetrics, generateSummary, router]);
 
   return (
     <div className="fixed-height-container">
-      <SpaceTheme />
       <div className="absolute inset-0 flex items-center justify-center">
         <div className="w-full max-w-4xl mx-auto px-8 relative z-20">
           <Card className="relative card-custom border-none bg-black/40 backdrop-blur-[1px] w-full h-[500px] transform transition-all duration-300
@@ -258,7 +260,7 @@ export default function HealthAssessmentPage() {
                     </div>
                     <div className="progress-base">
                       <div 
-                        className={cn("progress-fill", 
+                        className={cn("deep-space-gradient h-full", 
                           currentQuestion === 0 && "w-0"
                         )}
                         style={{width: `${((currentQuestion + 1) / questions.length) * 100}%`}}
@@ -267,15 +269,18 @@ export default function HealthAssessmentPage() {
                   </div>
                   <div className="flex-1 flex flex-col justify-center -mt-4">
                     <h3 className="text-2xl font-medium tracking-tight text-[#f7f7f7] mb-8">
-                      {questions[currentQuestion].question}
+                      {questions[currentQuestion]?.text || ''}
                     </h3>
                     <div>
-                      <QuestionRenderer
-                        question={questions[currentQuestion]}
-                        onAnswer={handleAnswer}
-                        answers={answers}
-                        resetMessage={resetMessage}
-                      />
+                      {questions[currentQuestion] && (
+                        <QuestionRenderer
+                          key="question-renderer"
+                          question={questions[currentQuestion]}
+                          onAnswer={handleAnswer}
+                          currentAnswer={answers[questions[currentQuestion].id]}
+                          resetMessage={resetMessage}
+                        />
+                      )}
                     </div>
                   </div>
                 </div>
@@ -289,8 +294,8 @@ export default function HealthAssessmentPage() {
                     error={submitError}
                     answers={answers}
                     assessmentResults={{
-                      score: calculateOverallScore(answers),
-                      healthCalculations: calculateHealthMetrics(answers),
+                      score: calculateScore(answers, computeHealthMetrics(answers)),
+                      healthCalculations: computeHealthMetrics(answers),
                       summary: generateSummary(answers)
                     }}
                   />
@@ -300,7 +305,7 @@ export default function HealthAssessmentPage() {
                 <div className="flex justify-between">
                   {currentQuestion > 0 && !showContactForm && (
                     <Button 
-                      onClick={handlePrevious} 
+                      onClick={handlePreviousWithReset} 
                       variant="secondary"
                       size="default"
                     >
@@ -309,8 +314,8 @@ export default function HealthAssessmentPage() {
                   )}
                   {currentQuestion >= 0 && !showContactForm && (
                     <Button 
-                      onClick={handleNext} 
-                      disabled={!answers[questions[currentQuestion].id] && questions[currentQuestion].id !== 'bodyFat'}
+                      onClick={handleQuestionNavigation} 
+                      disabled={!answers[questions[currentQuestion].id] && !questions[currentQuestion].optional}
                       variant="primary"
                       size="default"
                     >

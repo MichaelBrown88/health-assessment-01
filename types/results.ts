@@ -1,44 +1,10 @@
-export interface HealthScore {
-  overall: number;
-  categories: {
-    exercise: number;
-    nutrition: number;
-    mentalHealth: number;
-  };
-}
-
-export interface HealthGoal {
-  id: string;
-  name: string;
-  description: string;
-  recommendations: string[];
-  difficulty: 'easy' | 'moderate' | 'challenging';
-}
-
-export interface AnalysisSection {
-  title: string;
-  summary: string;
-  recommendations: string[];
-  score: number;
-}
-
-export interface ResultsSummary {
-  score: HealthScore;
-  goals: HealthGoal[];
-  analysis: {
-    exercise: AnalysisSection;
-    nutrition: AnalysisSection;
-    mentalHealth: AnalysisSection;
-  };
-}
-
 export interface HealthCalculations {
   bmi: number | null;
   bmiCategory: string | null;
   bmr: number | null;
   tdee: number | null;
   bodyFat: number | null;
-  isBodyFatEstimated: boolean;
+  isBodyFatEstimated?: boolean;
   idealWeightLow: number | null;
   idealWeightHigh: number | null;
   recommendedCalories: number | null;
@@ -52,36 +18,54 @@ export interface HealthCalculations {
 }
 
 export interface AnswerType {
-  [key: string]: string | number | string[];
+  [key: string]: string | number | boolean | string[];
 }
 
-export interface SectionFeedback {
+export interface AssessmentResults {
   score: number;
-  color: string;
-  feedback: string;
-  recommendations: string;
-}
-
-export interface SectionSummary {
-  title: string;
-  score: number;
-  feedbackItems: SectionFeedback[];
-}
-
-export interface DecodedResults {
-  answers: Record<string, any>;
-  assessmentResults: {
-    score: number;
-    healthCalculations: HealthCalculations;
-    summary: {
-      exercise: string;
-      nutrition: string;
-      mentalHealth: string;
-    };
+  healthCalculations: HealthCalculations;
+  summary: {
+    exercise: string;
+    nutrition: string;
+    mentalHealth: string;
   };
 }
 
-export interface ResultsPageProps {
-  answers: Record<string, any>;
-  results?: DecodedResults;
+export interface ResultsData {
+  answers: AnswerType;
+  assessmentResults: AssessmentResults;
+  timestamp?: number;
+}
+
+export interface ResultsViewProps {
+  results: ResultsData;
+  showActions?: boolean;
+  className?: string;
+}
+
+export interface ResultsSummaryProps {
+  answers: AnswerType;
+  healthCalculations: HealthCalculations;
+  score: number;
+  className?: string;
+}
+
+export interface ResultsActionsProps {
+  onSave?: () => void;
+  onShare?: () => void;
+  onPrint?: () => void;
+  className?: string;
+}
+
+export interface HealthMetric {
+  timestamp: number;
+  value: number;
+  label?: string;
+  category?: string;
+}
+
+export interface MetricHistory {
+  metrics: HealthMetric[];
+  startDate: number;
+  endDate: number;
 } 

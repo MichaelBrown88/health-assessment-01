@@ -3,8 +3,7 @@
 import { useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
-import { AdminDashboard } from '@/components/AdminDashboard';
-import { SpaceTheme } from '@/components/SpaceTheme';
+import { AdminDashboard } from '@/components/admin/AdminDashboard';
 
 export default function AdminDashboardPage() {
   const { user, isAdmin } = useAuth();
@@ -22,7 +21,6 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="min-h-screen bg-black">
-      <SpaceTheme />
       <div className="container mx-auto px-4 py-8">
         <AdminDashboard />
       </div>

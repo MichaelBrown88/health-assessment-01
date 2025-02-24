@@ -1,12 +1,21 @@
+export interface QuestionOption {
+  value: string;
+  label: string;
+}
+
 export interface Question {
   id: string;
-  type: 'radio' | 'checkbox' | 'slider';
-  question: string;
-  options?: Array<{ value: string; label: string }>;
+  type: 'text' | 'number' | 'boolean' | 'single' | 'multiple' | 'scale';
+  text: string;
+  description?: string;
+  placeholder?: string;
+  options?: QuestionOption[];
   min?: number;
   max?: number;
   step?: number;
+  minLabel?: string;
+  maxLabel?: string;
   defaultValue?: number;
-  subText?: string;
-  condition?: (answers: Record<string, any>) => boolean;
+  optional?: boolean;
+  condition?: (answers: Record<string, string | number | boolean | string[]>) => boolean;
 } 

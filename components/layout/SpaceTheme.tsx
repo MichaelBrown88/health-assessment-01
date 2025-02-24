@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { memo } from 'react'
 
 // Predefined star positions to ensure consistency between server and client
 const STATIC_STARS = Array.from({ length: 50 }, (_, i) => ({
@@ -10,9 +10,9 @@ const STATIC_STARS = Array.from({ length: 50 }, (_, i) => ({
   opacity: 0.1 + (((i * 13 + 37) % 30) / 100)
 }));
 
-export function SpaceTheme() {
+const SpaceThemeComponent = () => {
   return (
-    <div className="fixed inset-0 z-0">
+    <div className="fixed inset-0 z-0 pointer-events-none">
       <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <radialGradient id="mesh-grad-1" cx="20%" cy="20%" r="50%">
@@ -57,6 +57,8 @@ export function SpaceTheme() {
     </div>
   )
 }
+
+export const SpaceTheme = memo(SpaceThemeComponent);
 
 const generateGridLines = () => {
   const lines = []

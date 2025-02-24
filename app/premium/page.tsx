@@ -2,12 +2,12 @@
 
 import { useAuth } from '@/contexts/AuthContext'
 import { SpaceTheme } from '@/components/layout/SpaceTheme'
-import { Card } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
+import { Card } from '@/components/core/card'
+import { Button } from '@/components/core/button'
 import { Crown, Check } from 'lucide-react'
 import { doc, updateDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
-import { useToast } from '@/components/ui/use-toast'
+import { useToast } from '@/components/core/use-toast'
 
 export default function PremiumPage() {
   const { user, isPremium } = useAuth()

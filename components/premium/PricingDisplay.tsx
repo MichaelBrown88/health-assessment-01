@@ -6,7 +6,7 @@ import type { CurrencyConfig } from '@/utils/pricing'
 
 interface PricingDisplayProps {
   isYearly: boolean;
-  currency: CurrencyConfig;
+  currencyConfig: CurrencyConfig;
   monthlyPrice: number;
   yearlyPricePerMonth: number;
   yearlyPrice: number;
@@ -16,7 +16,7 @@ interface PricingDisplayProps {
 
 export function PricingDisplay({
   isYearly,
-  currency,
+  currencyConfig,
   monthlyPrice,
   yearlyPricePerMonth,
   yearlyPrice,
@@ -28,17 +28,17 @@ export function PricingDisplay({
       <div className="flex justify-center items-center space-x-2">
         <Crown className="w-5 h-5 text-yellow-400" />
         <span className="text-2xl font-bold">
-          {formatPrice(isYearly ? yearlyPricePerMonth : monthlyPrice, currency)}
+          {formatPrice(isYearly ? yearlyPricePerMonth : monthlyPrice, currencyConfig.code)}
           <span className="text-sm text-gray-400">/month</span>
         </span>
       </div>
       {isYearly && (
         <div className="text-sm">
           <p className="text-green-400">
-            Save {formatPrice(savings, currency)} ({savingsPercentage}% off)
+            Save {formatPrice(savings, currencyConfig.code)} ({savingsPercentage}% off)
           </p>
           <p className="text-gray-400">
-            Billed annually at {formatPrice(yearlyPrice, currency)}
+            Billed annually at {formatPrice(yearlyPrice, currencyConfig.code)}
           </p>
         </div>
       )}

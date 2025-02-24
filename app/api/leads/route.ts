@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
-import { getFirestore } from 'firebase-admin/firestore';
+import { getFirestore, Firestore } from 'firebase-admin/firestore';
 
-let db: any;
+let db: Firestore;
 let initError: Error | null = null;
 
 function formatPrivateKey(key: string): string {
@@ -42,7 +42,7 @@ try {
       privateKeyLength: privateKey.length
     });
 
-    const app = initializeApp({
+    initializeApp({
       credential: cert({
         projectId: requiredEnvVars.projectId,
         clientEmail: requiredEnvVars.clientEmail,

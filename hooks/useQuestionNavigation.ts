@@ -1,9 +1,8 @@
 import { useState, useCallback } from 'react'
-import { Question } from '../types/Question'
-import { AnswerType } from '../types/Question'
+import type { Question, AnswerType } from '@/types/assessment'
 
 export const useQuestionNavigation = (questions: Question[], answers: AnswerType) => {
-  const [currentQuestion, setCurrentQuestion] = useState(-1)
+  const [currentQuestion, setCurrentQuestion] = useState(0)
 
   const handleNext = useCallback(() => {
     let nextQuestion = currentQuestion + 1

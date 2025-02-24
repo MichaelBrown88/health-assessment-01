@@ -1,14 +1,14 @@
 'use client'
 
 import { useState } from 'react'
-import { Button } from '@/components/ui/button'
+import { Button } from '@/components/core/button'
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from '@/components/ui/dialog'
+} from '@/components/core/dialog'
 import { FcGoogle } from 'react-icons/fc'
 import { useAuth } from '@/contexts/AuthContext'
 import { AuthForm } from '@/components/auth/AuthForm'

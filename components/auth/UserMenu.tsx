@@ -6,7 +6,7 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-} from '@/components/ui/dropdown-menu'
+} from '@/components/core/dropdown-menu'
 import {
   LogOut,
   ClipboardCheck,

@@ -137,7 +137,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     createAdminAccount,
     logout,
     updateProfile,
-    checkPremiumStatus
+    checkPremiumStatus,
+    // Force isPremium to true in development mode
+    isPremium: process.env.NODE_ENV === 'development' ? true : state.isPremium
   };
 
   if (state.loading) {

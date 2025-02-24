@@ -1,7 +1,7 @@
 'use client'
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/core/dialog"
+import { Button } from "@/components/core/button"
 import { useRouter } from "next/navigation"
 import { PRICING_FEATURES } from "@/utils/pricing"
 

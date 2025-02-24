@@ -1,5 +1,5 @@
 export type AnswerType = {
-  [key: string]: string | number | string[];
+  [key: string]: string | number | boolean | string[] | undefined;
 }
 
 export interface Question {

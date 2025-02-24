@@ -3,19 +3,21 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { calculateHealthMetrics } from '@/utils/healthUtils'
-import { calculateHealthScore, getOverallScore } from '@/utils/pillarScoring'
-import { HealthPillars } from '@/components/results/HealthPillars'
-import { HealthScoreSection } from '@/components/results/HealthScoreSection'
-import { HealthMetricsContainer } from '@/components/results/HealthMetricsContainer'
-import { FeedbackSections } from '@/components/results/FeedbackSections'
-import { CTASection } from '@/components/results/CTASection'
-import { ResultsLoading } from '@/components/results/ResultsLoading'
-import { ResultsErrorBoundary } from '@/components/results/ResultsErrorBoundary'
-import { SpaceTheme } from '@/components/layout/SpaceTheme'
-import type { DecodedResults } from '@/types/results'
-import { WelcomeMessage } from '@/components/results/WelcomeMessage'
-import { SummarySection } from '@/components/results/SummarySection'
+import { Card } from "@/components/core/card"
+import { Button } from "@/components/core/button"
+import { Label } from "@/components/core/label"
+import { calculateHealthMetrics } from '@/utils/health'
+import { calculateHealthScore } from '@/utils/pillarScoring'
+import { calculateScore } from '@/utils/scoring'
+import { HealthPillars } from '@/components/features/results/HealthPillars'
+import { HealthScoreSection } from '@/components/features/results/HealthScoreSection'
+import { HealthMetricsContainer } from '@/components/features/results/HealthMetricsContainer'
+import { FeedbackSections } from '@/components/features/results/FeedbackSections'
+import { CTASection } from '@/components/features/results/CTASection'
+import { ResultsLoading } from '@/components/features/results/ResultsLoading'
+import { ResultsErrorBoundary } from '@/components/features/results/ResultsErrorBoundary'
+import { WelcomeMessage } from '@/components/features/results/WelcomeMessage'
+import { SummarySection } from '@/components/features/results/SummarySection'
 import { doc, getDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 
@@ -102,17 +104,16 @@ export default function ResultsPage() {
   if (error) return <div className="text-red-500">{error}</div>
   if (!results) return <div>No results found. Please complete the assessment.</div>
 
-  const pillarScores = calculateHealthScore(
-    results.answers,
-    results.assessmentResults.healthCalculations
-  )
-
-  const overallScore = getOverallScore(pillarScores)
+  // Calculate health metrics and pillar scores
+  const healthCalculations = results.assessmentResults.healthCalculations;
+  const pillarScores = calculateHealthScore(results.answers, healthCalculations);
+  
+  // Calculate overall score using the standardized method from scoring.ts
+  const overallScore = calculateScore(results.answers, healthCalculations);
 
   return (
     <ResultsErrorBoundary>
       <div className="min-h-screen flex flex-col relative">
-        <SpaceTheme />
         <div className="relative z-20 w-full max-w-4xl mx-auto px-4 py-8 flex-1">
           <div className="space-y-8">
             <WelcomeMessage 
@@ -125,7 +126,7 @@ export default function ResultsPage() {
             />
 
             <HealthMetricsContainer 
-              healthCalculations={results.assessmentResults.healthCalculations}
+              healthCalculations={healthCalculations}
               answers={results.answers}
               score={overallScore}
             />
@@ -133,18 +134,15 @@ export default function ResultsPage() {
             <div className="relative">
               <HealthPillars 
                 pillarScores={pillarScores}
+                answers={results.answers}
+                healthCalculations={healthCalculations}
+                score={overallScore}
               />
             </div>
 
             <FeedbackSections 
               answers={results.answers}
-              healthCalculations={results.assessmentResults.healthCalculations}
-            />
-
-            <SummarySection 
-              answers={results.answers}
-              healthCalculations={results.assessmentResults.healthCalculations}
-              score={overallScore}
+              healthCalculations={healthCalculations}
             />
 
             <CTASection user={user} />

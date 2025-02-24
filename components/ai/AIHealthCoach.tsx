@@ -2,10 +2,10 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/components/core/use-toast";
 import { useAuth } from '@/contexts/AuthContext';
 import { PaywallModal } from '@/components/premium/PaywallModal';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/core/button';
 import { Lock, Send, Loader2, X } from 'lucide-react';
 import { generateAIResponse } from '@/utils/ai-utils'
 
@@ -71,6 +71,13 @@ export function AIHealthCoach({ assessmentData, onClose }: AIHealthCoachProps) {
   const { toast } = useToast();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Always allow access in development mode
+  const isPremium = process.env.NODE_ENV === 'development' ? true : user?.isPremium;
+
+  if (!isPremium) {
+    return <PaywallModal isOpen={true} onClose={onClose} />;
+  }
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -96,7 +103,8 @@ export function AIHealthCoach({ assessmentData, onClose }: AIHealthCoachProps) {
   };
 
   const handleAskQuestion = async (questionText: string = question) => {
-    if (!user) {
+    // In development mode, don't require authentication
+    if (process.env.NODE_ENV !== 'development' && !user) {
       setShowPaywall(true);
       return;
     }
@@ -120,18 +128,44 @@ export function AIHealthCoach({ assessmentData, onClose }: AIHealthCoachProps) {
     setQuestion('');
     setIsLoading(true);
 
+    // Add a delay between requests to prevent rate limiting
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
     try {
       const response = await fetch('/api/health-coach', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${await user.getIdToken()}`
+          // Skip token in development mode
+          ...(process.env.NODE_ENV !== 'development' && user 
+            ? { 'Authorization': `Bearer ${await user.getIdToken()}` }
+            : {})
         },
         body: JSON.stringify({
           question: questionText,
           context: assessmentData
         }),
       });
+
+      if (response.status === 429) {
+        const errorData = await response.json();
+        toast({
+          title: "Rate Limit",
+          description: errorData.error || "Please wait a moment before asking another question.",
+          variant: "destructive",
+          duration: 5000,
+        });
+        
+        // Add a system message about the rate limit
+        const systemMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          type: 'assistant',
+          content: "I'm currently handling many requests. Please wait a few seconds before asking another question.",
+          timestamp: new Date()
+        };
+        setMessages(prev => [...prev, systemMessage]);
+        return;
+      }
 
       if (!response.ok) {
         throw new Error('Failed to get response');
@@ -149,9 +183,19 @@ export function AIHealthCoach({ assessmentData, onClose }: AIHealthCoachProps) {
       setMessages(prev => [...prev, aiMessage]);
     } catch (error) {
       console.error('Error:', error);
+      
+      // Add a more helpful error message to the chat
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        type: 'assistant',
+        content: "I apologize, but I'm having trouble processing your request right now. Please try again in a moment.",
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, errorMessage]);
+
       toast({
         title: "Error",
-        description: "Failed to get response from AI coach",
+        description: "Failed to get response. Please try again in a moment.",
         variant: "destructive",
       });
     } finally {

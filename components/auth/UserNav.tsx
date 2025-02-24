@@ -1,7 +1,7 @@
 'use client'
 
 import { useAuth } from "@/contexts/AuthContext"
-import { Button } from "@/components/ui/button"
+import { Button } from "@/components/core/button"
 import { 
   DropdownMenu,
   DropdownMenuContent,
@@ -9,7 +9,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/core/dropdown-menu"
 import { 
   User as UserIcon, 
   LogIn, 

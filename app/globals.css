@@ -99,6 +99,75 @@
   .scrollable-container {
     @apply min-h-[calc(100vh-theme(spacing.header))] overflow-y-auto;
   }
+
+  /* Question Container */
+  .question-container {
+    position: relative;
+    width: 100%;
+  }
+
+  /* Progress Bar */
+  .progress-base {
+    width: 100%;
+    height: 2px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 2rem;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0.8) 100%);
+    transition: width 0.3s ease-in-out;
+  }
+
+  /* Slider Container */
+  .slider-container {
+    position: relative;
+    padding: 1rem 0;
+  }
+
+  /* Animation */
+  @keyframes fadeInOut {
+    0% { opacity: 0; }
+    50% { opacity: 1; }
+    100% { opacity: 0; }
+  }
+
+  .animate-fade-in-out {
+    animation: fadeInOut 2s ease-in-out;
+  }
+
+  /* Card Custom */
+  .card-custom {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .card-custom::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 0.5rem;
+    padding: 0.5px;
+    background: rgba(255, 255, 255, 0.03);
+    -webkit-mask: 
+      linear-gradient(#fff 0 0) content-box, 
+      linear-gradient(#fff 0 0);
+    mask: 
+      linear-gradient(#fff 0 0) content-box, 
+      linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+  }
+
+  /* Fixed Height Container */
+  .fixed-height-container {
+    height: calc(100vh - 4rem);
+    position: relative;
+    overflow: hidden;
+  }
 }
 
 @keyframes fadeInOut {

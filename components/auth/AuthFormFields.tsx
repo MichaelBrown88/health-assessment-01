@@ -1,3 +1,7 @@
+import { Label } from "@/components/core/label"
+import { Input } from "@/components/core/input"
+import { PasswordStrengthIndicator } from "@/components/auth/PasswordStrengthIndicator"
+
 interface AuthFormFieldsProps {
   email: string;
   password: string;

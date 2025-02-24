@@ -7,7 +7,7 @@ import {
     Tooltip, 
     ResponsiveContainer 
   } from 'recharts';
-  import { Card } from '@/components/ui/card';
+  import { Card } from '@/components/core/card';
   import type { Analytics } from '@/types/analytics';
   
   interface ChartData {

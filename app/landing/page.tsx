@@ -2,7 +2,7 @@
 
 import React from 'react'
 import { useRouter } from 'next/navigation'
-import { Button } from '@/components/ui/button'
+import { Button } from '@/components/core/button'
 import Link from 'next/link'
 import { 
   Activity, 
@@ -14,9 +14,9 @@ export default function LandingPage() {
   const router = useRouter()
 
   return (
-    <div className="relative z-20 h-[calc(100vh-6rem)] overflow-hidden px-4">
-      <div className="h-full flex flex-col items-center justify-center">
-        <div className="text-white text-center max-w-6xl -mt-16">
+    <div className="relative z-20 min-h-[calc(100vh-6rem)] flex items-center justify-center overflow-hidden px-4 py-12">
+      <div className="flex flex-col items-center justify-center">
+        <div className="text-white text-center max-w-6xl">
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-4 tracking-tight">
             AI-Powered Health Assessment<br />For Your Wellness Journey
           </h1>

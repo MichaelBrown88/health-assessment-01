@@ -1,8 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { Card } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
+import { Card } from '@/components/core/card'
+import { Button } from '@/components/core/button'
 import {
   BarChart3,
   Users,

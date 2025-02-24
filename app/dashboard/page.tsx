@@ -18,7 +18,7 @@ import {
   Clock as ClockIcon
 } from 'lucide-react'
 import { calculateStreak, calculateCompletionRate, compareMetrics } from '@/lib/metrics'
-import { Card } from "@/components/ui/card"
+import { Card } from "@/components/core/card"
 import { PillarOverview } from '@/components/dashboard/PillarOverview'
 import { AssessmentHistory } from '@/components/dashboard/AssessmentHistory'
 import { useAssessmentData } from '@/hooks/useAssessmentData'

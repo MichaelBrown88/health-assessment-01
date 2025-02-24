@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { Button } from "@/components/ui/button"
+import { Button } from "@/components/core/button"
 import { PaywallModal } from "@/components/premium/PaywallModal"
 import { useAuth } from "@/contexts/AuthContext"
 

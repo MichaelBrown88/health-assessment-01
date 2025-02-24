@@ -1,69 +1,114 @@
 import { OpenAI } from 'openai';
 import { NextResponse } from 'next/server';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Simple delay function for retries
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-export async function POST(req: Request) {
+// Rate limiting variables
+let lastRequestTime = 0;
+const MIN_REQUEST_INTERVAL = 2000; // Minimum 2 seconds between requests
+
+export async function POST(request: Request) {
   try {
-    // Get the authorization header
-    const authHeader = req.headers.get('authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+    // Basic rate limiting
+    const now = Date.now();
+    if (now - lastRequestTime < MIN_REQUEST_INTERVAL) {
+      return NextResponse.json({ 
+        error: 'Please wait a few seconds between requests.' 
+      }, { status: 429 });
+    }
+    lastRequestTime = now;
+
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey || !(apiKey.startsWith('sk-') || apiKey.startsWith('sk-proj-'))) {
+      console.error('Invalid or missing OpenAI API key');
+      return NextResponse.json({ error: 'OpenAI API key is not properly configured' }, { status: 500 });
     }
 
-    const token = authHeader.split('Bearer ')[1];
-    if (!token) {
-      return NextResponse.json(
-        { error: 'No token provided' },
-        { status: 401 }
-      );
-    }
-
-    const body = await req.json();
-    const { question, context } = body;
-
-    if (!question || !context) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      );
-    }
-
-    const completion = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
-      messages: [
-        {
-          role: "system",
-          content: "You are a knowledgeable health coach providing personalized advice based on assessment data."
-        },
-        {
-          role: "user",
-          content: `Based on the following health data:
-            - Overall Score: ${context.score}
-            - BMI: ${context.healthCalculations.bmi}
-            - Exercise Level: ${context.answers.activityLevel}
-            
-            Question: ${question}
-            
-            Provide specific, actionable advice.`
-        }
-      ],
+    const openai = new OpenAI({ 
+      apiKey,
+      maxRetries: 2,
+      timeout: 15000 // 15 second timeout
     });
+
+    const { question, context } = await request.json();
+
+    if (!question) {
+      return NextResponse.json({ error: 'Question is required' }, { status: 400 });
+    }
+
+    if (!context) {
+      return NextResponse.json({ error: 'Context is required' }, { status: 400 });
+    }
+
+    const { score = 'not provided', bmi = 'not provided', activityLevel = 'not provided' } = context;
+
+    // Maximum number of retries
+    const maxRetries = 2;
+    let retryCount = 0;
+    let lastError = null;
+
+    while (retryCount < maxRetries) {
+      try {
+        const completion = await openai.chat.completions.create({
+          model: "gpt-3.5-turbo",
+          messages: [
+            {
+              role: "system",
+              content: `As a health coach, provide brief, focused advice based on: Score=${score}, BMI=${bmi}, Activity=${activityLevel}.`
+            },
+            {
+              role: "user",
+              content: question
+            }
+          ],
+          temperature: 0.7,
+          max_tokens: 150, // Reduced token count
+          presence_penalty: 0.1,
+          frequency_penalty: 0.1,
+        });
+
+        return NextResponse.json({ response: completion.choices[0].message.content });
+      } catch (error: any) {
+        console.error('OpenAI API Error:', error);
+        lastError = error;
+
+        if (error.status === 429) {
+          // Rate limit hit - wait longer between retries
+          const waitTime = Math.pow(2, retryCount + 1) * 1000; // Exponential backoff
+          console.log(`Rate limit hit, waiting ${waitTime}ms before retry ${retryCount + 1}`);
+          await delay(waitTime);
+          retryCount++;
+          continue;
+        }
+
+        throw error; // Re-throw other errors
+      }
+    }
+
+    // If we get here, we've exhausted our retries
+    console.error('Max retries reached:', lastError);
+    return NextResponse.json({ 
+      error: 'Service is currently busy. Please try again in a few moments.' 
+    }, { status: 429 });
+
+  } catch (error: any) {
+    console.error('General Error:', error);
+    
+    if (error.status === 401) {
+      return NextResponse.json({ 
+        error: 'Authentication error. Please check your API key configuration.' 
+      }, { status: 401 });
+    }
+    
+    if (error.status === 429) {
+      return NextResponse.json({ 
+        error: 'Service is busy. Please wait a moment and try again.' 
+      }, { status: 429 });
+    }
 
     return NextResponse.json({ 
-      response: completion.choices[0].message.content 
-    });
-
-  } catch (error) {
-    console.error('AI Coach API Error:', error);
-    return NextResponse.json(
-      { error: 'Failed to get response from AI coach' },
-      { status: 500 }
-    );
+      error: 'Internal server error. Please try again later.' 
+    }, { status: 500 });
   }
 }

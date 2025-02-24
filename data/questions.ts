@@ -5,36 +5,49 @@ export interface QuestionOption {
 
 export interface Question {
   id: string;
-  question: string;
-  subText?: string;
-  type: 'radio' | 'checkbox' | 'slider';
+  text: string;
+  type: 'text' | 'number' | 'boolean' | 'single' | 'multiple' | 'scale';
+  description?: string;
+  placeholder?: string;
   options?: QuestionOption[];
   min?: number;
   max?: number;
   step?: number;
-  defaultValue?: number;
+  minLabel?: string;
+  maxLabel?: string;
   condition?: (answers: AnswerType) => boolean;
   optional?: boolean;
 }
 
 export interface AnswerType {
-  [key: string]: string | number | string[];
+  [key: string]: string | number | boolean | string[];
 }
+
+// Map old question types to new ones
+const mapQuestionType = (type: 'radio' | 'checkbox' | 'slider'): Question['type'] => {
+  switch (type) {
+    case 'radio': return 'single';
+    case 'checkbox': return 'multiple';
+    case 'slider': return 'scale';
+    default: return 'single';
+  }
+};
 
 export const questions: Question[] = [
   { 
     id: "age", 
-    question: "What is your age?", 
-    type: "slider",
+    text: "What is your age?", 
+    type: "scale",
     min: 18,
     max: 100,
     step: 1,
-    defaultValue: 30
+    minLabel: "18 years",
+    maxLabel: "100 years"
   },
   {
     id: "gender",
-    question: "What is your gender?",
-    type: "radio",
+    text: "What is your gender?",
+    type: "single",
     options: [
       { value: "male", label: "Male" },
       { value: "female", label: "Female" },
@@ -42,37 +55,40 @@ export const questions: Question[] = [
   },
   { 
     id: "height", 
-    question: "What is your height in cm?", 
-    type: "slider",
+    text: "What is your height in cm?", 
+    type: "scale",
     min: 140,
     max: 220,
     step: 1,
-    defaultValue: 175
+    minLabel: "140 cm",
+    maxLabel: "220 cm"
   },
   { 
     id: "weight", 
-    question: "What is your weight in kg?", 
-    type: "slider",
+    text: "What is your weight in kg?", 
+    type: "scale",
     min: 40,
     max: 200,
     step: 0.1,
-    defaultValue: 70
+    minLabel: "40 kg",
+    maxLabel: "200 kg"
   },
   { 
     id: "bodyFat", 
-    question: "What is your body fat percentage?",
-    subText: "Optional - leave empty for automatic estimation",
-    type: "slider",
+    text: "What is your body fat percentage?",
+    description: "Optional - leave empty for automatic estimation",
+    type: "scale",
     min: 5,
     max: 50,
     step: 0.1,
-    defaultValue: 20,
+    minLabel: "5%",
+    maxLabel: "50%",
     optional: true
   },
   {
     id: "activityLevel",
-    question: "What is your activity level?",
-    type: "radio",
+    text: "What is your activity level?",
+    type: "single",
     options: [
       { value: "sedentary", label: "Sedentary (little to no exercise)" },
       { value: "light", label: "Lightly active (light exercise 1-2 days/week)" },
@@ -83,32 +99,32 @@ export const questions: Question[] = [
   },
   {
     id: "exerciseIntensity",
-    question: "How intense are your typical workouts?",
-    type: "radio",
+    text: "How intense are your typical workouts?",
+    type: "single",
     options: [
       { value: "light", label: "Light (minimal sweating, normal heart rate)" },
       { value: "moderate", label: "Moderate (light sweating, elevated heart rate)" },
       { value: "vigorous", label: "Vigorous (heavy sweating, rapid heart rate)" },
       { value: "very-intense", label: "Very intense (profuse sweating, very rapid heart rate)" },
     ],
-    condition: (answers: AnswerType) => answers.activityLevel !== "sedentary",
+    condition: (answers: AnswerType) => answers.activityLevel !== "sedentary"
   },
   {
     id: "exerciseDuration",
-    question: "On average, how long is each of your exercise sessions?",
-    type: "radio",
+    text: "On average, how long is each of your exercise sessions?",
+    type: "single",
     options: [
       { value: "less-than-30", label: "Less than 30 minutes" },
       { value: "30-45", label: "30-45 minutes" },
       { value: "45-60", label: "45-60 minutes" },
       { value: "60+", label: "More than 60 minutes" },
     ],
-    condition: (answers: AnswerType) => answers.activityLevel !== "sedentary",
+    condition: (answers: AnswerType) => answers.activityLevel !== "sedentary"
   },
   {
     id: "exerciseType",
-    question: "What type(s) of exercise do you primarily do?",
-    type: "checkbox",
+    text: "What type(s) of exercise do you primarily do?",
+    type: "multiple",
     options: [
       { value: "cardio", label: "Cardio (running, cycling, swimming)" },
       { value: "strength", label: "Strength training" },
@@ -116,12 +132,12 @@ export const questions: Question[] = [
       { value: "flexibility", label: "Flexibility (yoga, pilates)" },
       { value: "mixed", label: "Mixed (combination of different types)" },
     ],
-    condition: (answers: AnswerType) => answers.activityLevel !== "sedentary",
+    condition: (answers: AnswerType) => answers.activityLevel !== "sedentary"
   },
   {
     id: "goals",
-    question: "What are your primary health goals?",
-    type: "checkbox",
+    text: "What are your primary health goals?",
+    type: "multiple",
     options: [
       { value: "weight-loss", label: "Weight loss" },
       { value: "muscle-gain", label: "Muscle gain" },
@@ -131,8 +147,8 @@ export const questions: Question[] = [
   },
   {
     id: "diet",
-    question: "How would you describe your overall diet and eating habits?",
-    type: "radio",
+    text: "How would you describe your overall diet and eating habits?",
+    type: "single",
     options: [
       { value: "unhealthy", label: "Mostly unhealthy (processed foods, high in sugar and fat, few fruits and vegetables)" },
       { value: "average", label: "Average (mix of healthy and unhealthy foods, some fruits and vegetables)" },
@@ -142,8 +158,8 @@ export const questions: Question[] = [
   },
   {
     id: "carbPreference",
-    question: "What is your preference for carbohydrate intake in your diet?",
-    type: "radio",
+    text: "What is your preference for carbohydrate intake in your diet?",
+    type: "single",
     options: [
       { value: "low-carb", label: "Low-carb: I prefer to eat fewer carbohydrates" },
       { value: "moderate-carb", label: "Moderate-carb: I like to have a balanced mix of carbohydrates, protein, and fats" },
@@ -152,8 +168,8 @@ export const questions: Question[] = [
   },
   {
     id: "lastMeal",
-    question: "When do you typically eat your last meal of the day?",
-    type: "radio",
+    text: "When do you typically eat your last meal of the day?",
+    type: "single",
     options: [
       { value: "before-6pm", label: "Before 6 PM" },
       { value: "6pm-8pm", label: "Between 6 PM and 8 PM" },
@@ -163,8 +179,8 @@ export const questions: Question[] = [
   },
   {
     id: "mealFrequency",
-    question: "How many meals do you typically eat per day?",
-    type: "radio",
+    text: "How many meals do you typically eat per day?",
+    type: "single",
     options: [
       { value: "1-2", label: "1-2 meals" },
       { value: "3-4", label: "3-4 meals" },
@@ -173,9 +189,9 @@ export const questions: Question[] = [
   },
   {
     id: "sleepDuration",
-    question: "How many hours do you typically sleep per night?",
-    subText: "Consider your average sleep duration over the past month",
-    type: "radio",
+    text: "How many hours do you typically sleep per night?",
+    description: "Consider your average sleep duration over the past month",
+    type: "single",
     options: [
       { value: "less-than-5", label: "Less than 5 hours" },
       { value: "5-7", label: "5-7 hours" },
@@ -185,8 +201,8 @@ export const questions: Question[] = [
   },
   {
     id: "sleepQuality",
-    question: "How would you describe your sleep quality?",
-    type: "radio",
+    text: "How would you describe your sleep quality?",
+    type: "single",
     options: [
       { value: "poor", label: "Poor (wake up regularly throughout the night)" },
       { value: "fair", label: "Fair (some disruptions, but generally okay)" },
@@ -196,8 +212,8 @@ export const questions: Question[] = [
   },
   {
     id: "recovery",
-    question: "How well do you feel your body recovers after physical activity?",
-    type: "radio",
+    text: "How well do you feel your body recovers after physical activity?",
+    type: "single",
     options: [
       { value: "poor", label: "Poor (often feel sore and fatigued for days)" },
       { value: "fair", label: "Fair (some lingering soreness, but manageable)" },
@@ -207,8 +223,8 @@ export const questions: Question[] = [
   },
   {
     id: "stress",
-    question: "How would you rate your stress levels?",
-    type: "radio",
+    text: "How would you rate your stress levels?",
+    type: "single",
     options: [
       { value: "very-high", label: "Very high" },
       { value: "high", label: "High" },
@@ -218,8 +234,8 @@ export const questions: Question[] = [
   },
   {
     id: "mentalHealth",
-    question: "How often do you feel down or anxious?",
-    type: "radio",
+    text: "How often do you feel down or anxious?",
+    type: "single",
     options: [
       { value: "often", label: "Often (most days)" },
       { value: "sometimes", label: "Sometimes (a few times a week)" },
@@ -229,8 +245,8 @@ export const questions: Question[] = [
   },
   {
     id: "socializing",
-    question: "How often do you engage in social activities or spend time with friends/family?",
-    type: "radio",
+    text: "How often do you engage in social activities or spend time with friends/family?",
+    type: "single",
     options: [
       { value: "rarely", label: "Rarely (less than once a month)" },
       { value: "occasionally", label: "Occasionally (1-2 times a month)" },

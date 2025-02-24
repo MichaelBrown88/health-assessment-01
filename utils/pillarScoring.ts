@@ -10,6 +10,7 @@ import type {
 } from '@/types/scoring';
 import type { AnswerType } from '@/types/Question';
 import type { HealthCalculations } from '@/types/results';
+import { calculateScore } from './scoring';
 
 // Calculate body composition score (20 points max)
 function calculateBodyCompositionScore(metrics: BodyCompositionMetrics): PillarScore {
@@ -495,10 +496,14 @@ export function calculateHealthScore(answers: AnswerType, healthCalculations: He
 }
 
 export function getOverallScore(pillarScores: HealthPillarScores): number {
-  const totalScore = Object.values(pillarScores).reduce(
-    (sum, pillar) => sum + pillar.score,
-    0
-  );
-  // Cap the overall score at 100
-  return Math.min(100, Math.round(totalScore / 1.5)); // Divide by 1.5 since we have 5 pillars at 30 points each
+  // Convert pillar scores to health calculations format
+  const healthCalculations = {
+    exerciseScore: pillarScores.exercise.score * (100/30),
+    nutritionScore: pillarScores.nutrition.score * (100/30),
+    mentalHealthScore: pillarScores.mentalHealth.score * (100/30),
+    sleepScore: pillarScores.recovery.score * (100/30),
+    bmi: null
+  };
+
+  return calculateScore({}, healthCalculations);
 } 

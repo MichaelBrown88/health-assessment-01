@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useAuth } from "@/contexts/AuthContext";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/core/button";
 import { X } from 'lucide-react';
 import { AdminModalProps } from '@/types/admin';
 
